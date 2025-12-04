@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
-import { BookOpen, User, GraduationCap, Mic, FileText, BrainCircuit, Library, PenTool, X, Save, Plus, ChevronRight, ChevronDown, Folder, File, AlertCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BookOpen, User, GraduationCap, Mic, FileText, BrainCircuit, Library, PenTool, X, Save, Plus, ChevronRight, ChevronDown, Folder, File, AlertTriangle, Shield, Database, Link2 } from 'lucide-react';
+import { Drawboard } from '../components/Drawboard';
 
 interface Subject {
   id: string;
@@ -28,11 +29,27 @@ const SUBJECTS: Subject[] = [
   { id: 'sport', name: 'P.E. / SPORT', teacher: 'Stoian', icon: <div className="font-mono font-bold">Run</div> },
 ];
 
-export const AcademicPage: React.FC = () => {
+interface AcademicPageProps {
+    targetSubjectId?: string;
+}
+
+export const AcademicPage: React.FC<AcademicPageProps> = ({ targetSubjectId }) => {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
 
+  useEffect(() => {
+      if (targetSubjectId) {
+          if (targetSubjectId === 'drawboard') {
+              // Open a generic subject for drawboard
+               setSelectedSubject({ id: 'drawboard', name: 'GENERAL WORKSPACE', teacher: 'AI ASSISTED', icon: <PenTool /> });
+          } else {
+              const sub = SUBJECTS.find(s => s.id === targetSubjectId || s.name.toLowerCase().includes(targetSubjectId.toLowerCase()));
+              if (sub) setSelectedSubject(sub);
+          }
+      }
+  }, [targetSubjectId]);
+
   return (
-    <div className="w-full h-full p-4 md:p-8 animate-[fadeIn_0.5s_ease-out] overflow-y-auto relative">
+    <div className="w-full h-full p-4 md:p-8 animate-[fadeIn_0.5s_ease-out] overflow-y-auto relative pb-24">
       
       {/* HEADER */}
       <div className="mb-8 border-b border-cyan-900/50 pb-4">
@@ -64,7 +81,7 @@ export const AcademicPage: React.FC = () => {
 
       {/* MODAL */}
       {selectedSubject && (
-        <SubjectModal subject={selectedSubject} onClose={() => setSelectedSubject(null)} />
+        <SubjectModal subject={selectedSubject} onClose={() => setSelectedSubject(null)} initialTab={selectedSubject.id === 'drawboard' ? 'drawboard' : undefined} />
       )}
 
     </div>
@@ -89,11 +106,12 @@ interface Module {
 interface ModalProps {
     subject: Subject;
     onClose: () => void;
+    initialTab?: ToolTab;
 }
 
-type ToolTab = 'ianis_notes' | 'difficulties' | 'jarvis_synthesis' | 'class_notebook' | 'omni_notebook' | 'live_lesson' | 'test';
+type ToolTab = 'ianis_notes' | 'difficulties' | 'jarvis_synthesis' | 'class_notebook' | 'omni_notebook' | 'live_lesson' | 'test' | 'drawboard';
 
-const SubjectModal: React.FC<ModalProps> = ({ subject, onClose }) => {
+const SubjectModal: React.FC<ModalProps> = ({ subject, onClose, initialTab }) => {
     // Structural State
     const [modules, setModules] = useState<Module[]>([
         { 
@@ -115,10 +133,10 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose }) => {
         }
     ]);
     
-    // Selection State
-    const [selectedId, setSelectedId] = useState<string>('root'); // 'root' (subject), 'm1' (module), 'l1' (lesson)
+    const [dossierMode, setDossierMode] = useState(false);
+    const [selectedId, setSelectedId] = useState<string>('root');
     const [selectionType, setSelectionType] = useState<'subject'|'module'|'lesson'>('subject');
-    const [activeTab, setActiveTab] = useState<ToolTab>('ianis_notes');
+    const [activeTab, setActiveTab] = useState<ToolTab>(initialTab || 'ianis_notes');
 
     const toggleModule = (modId: string) => {
         setModules(prev => prev.map(m => m.id === modId ? {...m, isOpen: !m.isOpen} : m));
@@ -129,7 +147,6 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose }) => {
         setSelectionType(type);
     };
 
-    // Helper to get titles
     const getActiveTitle = () => {
         if (selectionType === 'subject') return subject.name;
         const mod = modules.find(m => m.id === selectedId || m.lessons.find(l => l.id === selectedId));
@@ -141,6 +158,7 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose }) => {
     const TOOLS: { id: ToolTab; label: string; icon: React.ReactNode }[] = [
         { id: 'ianis_notes', label: 'NOTES', icon: <FileText size={14} /> },
         { id: 'difficulties', label: 'DIFFICULTIES', icon: <AlertTriangle size={14} /> },
+        { id: 'drawboard', label: 'DRAWBOARD', icon: <PenTool size={14} /> },
         { id: 'jarvis_synthesis', label: 'AI SYNTHESIS', icon: <BrainCircuit size={14} /> },
         { id: 'class_notebook', label: 'NOTEBOOK', icon: <BookOpen size={14} /> },
         { id: 'omni_notebook', label: 'OMNI-DATA', icon: <Library size={14} /> },
@@ -161,11 +179,17 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose }) => {
                     <div className="p-4 border-b border-cyan-900/50 bg-cyan-950/20">
                         <div className="text-[10px] text-cyan-600 uppercase tracking-widest">Structure Browser</div>
                         <h2 className="text-lg font-bold text-white uppercase mt-1 truncate">{subject.name}</h2>
-                        <div className="text-[10px] text-cyan-500 font-mono">Prof. {subject.teacher}</div>
+                        
+                        <button 
+                            onClick={() => setDossierMode(!dossierMode)}
+                            className={`mt-2 flex items-center gap-2 text-[10px] uppercase font-bold px-2 py-1 rounded transition-all border ${dossierMode ? 'bg-white text-black border-white' : 'bg-transparent text-cyan-500 border-cyan-500 hover:bg-cyan-900/20'}`}
+                        >
+                            <Shield size={10} />
+                            {dossierMode ? 'CLOSE DOSSIER' : 'ACCESS PROFILE'}
+                        </button>
                     </div>
                     
                     <div className="flex-1 overflow-y-auto p-2 font-mono">
-                        {/* ROOT */}
                         <div 
                             onClick={() => handleSelect('root', 'subject')}
                             className={`flex items-center gap-2 p-2 rounded cursor-pointer mb-2 transition-colors ${selectedId === 'root' ? 'bg-cyan-900/40 text-cyan-100 border border-cyan-500/30' : 'text-cyan-600 hover:bg-cyan-900/20'}`}
@@ -174,7 +198,6 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose }) => {
                             <span className="text-xs font-bold uppercase">COURSE ROOT</span>
                         </div>
 
-                        {/* MODULES TREE */}
                         {modules.map(mod => (
                             <div key={mod.id} className="mb-1">
                                 <div 
@@ -189,7 +212,6 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose }) => {
                                     </div>
                                 </div>
 
-                                {/* LESSONS */}
                                 {mod.isOpen && (
                                     <div className="ml-4 border-l border-cyan-900/30 pl-2 mt-1 space-y-1">
                                         {mod.lessons.map(less => (
@@ -200,201 +222,53 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose }) => {
                                             >
                                                 <File size={10} />
                                                 <span className="truncate">{less.title}</span>
-                                                <span className="ml-auto text-[9px] opacity-50">{less.date}</span>
                                             </div>
                                         ))}
-                                        <button className="flex items-center gap-2 text-[10px] text-cyan-800 hover:text-cyan-500 px-2 py-1 w-full">
-                                            <Plus size={10} /> ADD LESSON
-                                        </button>
                                     </div>
                                 )}
                             </div>
                         ))}
-
-                        <button className="flex items-center justify-center gap-2 w-full py-2 mt-4 border border-dashed border-cyan-900/50 rounded text-cyan-700 hover:text-cyan-400 hover:border-cyan-500/50 text-cyan-xs uppercase font-bold transition-all">
-                             <Plus size={12} /> New Module
-                        </button>
                     </div>
                 </div>
 
                 {/* RIGHT: MAIN WORKSPACE */}
-                <div className="flex-1 flex flex-col bg-slate-950 relative">
-                    
-                    {/* TOP BAR - TOOL SELECTOR */}
-                    <div className="h-14 border-b border-cyan-900/50 bg-slate-900/50 flex items-center px-4 gap-1 overflow-x-auto scrollbar-hide">
-                         {TOOLS.map(tool => (
-                             <button
-                                key={tool.id}
-                                onClick={() => setActiveTab(tool.id)}
-                                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all whitespace-nowrap
-                                    ${activeTab === tool.id 
-                                        ? 'bg-cyan-600 text-white shadow-[0_0_10px_rgba(0,255,255,0.4)]' 
-                                        : 'text-cyan-600 hover:text-cyan-300 hover:bg-cyan-900/20'}
-                                `}
-                             >
-                                 {tool.icon}
-                                 {tool.label}
-                             </button>
-                         ))}
-                    </div>
-
-                    {/* CONTEXT INDICATOR */}
-                    <div className="px-6 py-2 bg-gradient-to-r from-cyan-900/20 to-transparent flex items-center justify-between">
-                         <div className="flex items-center gap-2 text-xs font-mono text-cyan-400">
-                             <span className="opacity-50 uppercase">{selectionType}:</span>
-                             <span className="font-bold">{getActiveTitle()}</span>
-                         </div>
-                         <div className="text-[10px] text-cyan-700 uppercase tracking-widest">
-                             {activeTab.replace('_', ' ')}
-                         </div>
-                    </div>
-
-                    {/* CONTENT AREA */}
-                    <div className="flex-1 p-6 overflow-y-auto bg-[radial-gradient(circle_at_center,rgba(0,40,50,0.1),transparent)]">
-                        
-                        {/* 1. IANIS NOTES */}
-                        {activeTab === 'ianis_notes' && (
-                            <div className="h-full flex flex-col animate-[fadeIn_0.2s_ease-out]">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <FileText className="text-cyan-500" size={16} />
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                                        {selectionType === 'lesson' ? 'LESSON NOTES' : selectionType === 'module' ? 'MODULE SUMMARY' : 'COURSE OVERVIEW'}
-                                    </h3>
-                                </div>
-                                <textarea 
-                                    className="flex-1 bg-slate-900/50 border border-cyan-900/30 rounded p-4 text-cyan-100 font-mono text-sm outline-none focus:border-cyan-500 resize-none placeholder-cyan-800" 
-                                    placeholder={selectionType === 'lesson' ? "// Record detailed observations for this specific lesson..." : "// Record general summary notes for this module..."}
-                                ></textarea>
-                                <div className="mt-4 flex justify-end">
-                                    <button className="flex items-center gap-2 px-4 py-2 bg-cyan-900/40 border border-cyan-500/30 rounded hover:bg-cyan-800/40 text-cyan-300 text-xs font-bold uppercase"><Save size={14}/> Save to Database</button>
-                                </div>
+                <div className="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
+                    {dossierMode ? (
+                        <div className="absolute inset-0 z-20 bg-slate-200 text-black p-8 font-mono overflow-y-auto" style={{backgroundImage: 'radial-gradient(#ccc 1px, transparent 1px)', backgroundSize: '10px 10px'}}>
+                             <div className="text-4xl font-black uppercase tracking-tighter mb-4">S.H.I.E.L.D. FILE: {subject.teacher}</div>
+                             <p>CLASSIFIED PERSONNEL DATA...</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="h-14 border-b border-cyan-900/50 bg-slate-900/50 flex items-center px-4 gap-1 overflow-x-auto scrollbar-hide">
+                                {TOOLS.map(tool => (
+                                    <button
+                                        key={tool.id}
+                                        onClick={() => setActiveTab(tool.id)}
+                                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all whitespace-nowrap
+                                            ${activeTab === tool.id 
+                                                ? 'bg-cyan-600 text-white shadow-[0_0_10px_rgba(0,255,255,0.4)]' 
+                                                : 'text-cyan-600 hover:text-cyan-300 hover:bg-cyan-900/20'}
+                                        `}
+                                    >
+                                        {tool.icon}
+                                        {tool.label}
+                                    </button>
+                                ))}
                             </div>
-                        )}
-
-                        {/* 2. DIFFICULTIES TAB (NEW) */}
-                        {activeTab === 'difficulties' && (
-                             <div className="h-full flex flex-col animate-[fadeIn_0.2s_ease-out]">
-                                <div className="flex items-center gap-2 mb-4 p-3 bg-red-900/20 border border-red-500/30 rounded">
-                                    <AlertTriangle className="text-red-500" size={18} />
-                                    <div>
-                                        <h3 className="text-xs font-bold text-red-100 uppercase tracking-widest">LEARNING BLOCKERS</h3>
-                                        <p className="text-[10px] text-red-300/70 font-mono">Log concepts or problems that require extra attention.</p>
-                                    </div>
-                                </div>
+                            <div className="flex-1 p-6 overflow-hidden flex flex-col">
+                                <h3 className="text-xs font-bold text-cyan-400 uppercase mb-2 shrink-0">{activeTab.replace('_',' ')}: {getActiveTitle()}</h3>
                                 
-                                {/* Mock List of Difficulties */}
-                                <div className="flex-1 flex flex-col gap-2">
-                                    {/* Item 1 */}
-                                    <div className="flex gap-2 items-start p-2 border border-dashed border-red-900/30 rounded hover:bg-red-900/10 transition-colors">
-                                        <div className="w-1 h-full bg-red-500 rounded"></div>
-                                        <div className="flex-1">
-                                            <div className="text-xs text-red-200 font-mono">Problem with recursive formulas</div>
-                                            <div className="text-[10px] text-red-400/60 uppercase mt-1">Status: Unresolved</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 pt-4 border-t border-cyan-900/30">
-                                    <input 
-                                        type="text" 
-                                        placeholder="ADD NEW DIFFICULTY..." 
-                                        className="w-full bg-slate-900/50 border border-cyan-900/30 rounded px-3 py-2 text-xs text-red-300 placeholder-red-900/50 outline-none focus:border-red-500 font-mono"
-                                    />
-                                    <button className="mt-2 w-full py-2 bg-red-900/20 border border-red-500/30 text-red-400 text-xs font-bold uppercase hover:bg-red-900/40 transition-colors">
-                                        LOG CHALLENGE
-                                    </button>
-                                </div>
-                             </div>
-                        )}
-
-                        {/* 3. JARVIS SYNTHESIS */}
-                        {activeTab === 'jarvis_synthesis' && (
-                            <div className="h-full flex flex-col animate-[fadeIn_0.2s_ease-out]">
-                                <div className="bg-purple-900/10 border border-purple-500/30 rounded p-4 mb-4">
-                                     <div className="flex items-center gap-2 text-purple-400 mb-2">
-                                         <BrainCircuit size={16} />
-                                         <span className="font-bold text-xs uppercase tracking-widest">AI ANALYSIS PROTOCOL</span>
-                                     </div>
-                                     <p className="text-xs text-purple-200/70 font-mono">
-                                         {selectionType === 'lesson' 
-                                            ? "JARVIS will analyze the audio transcript and your notes to generate a concise summary of this lesson." 
-                                            : "JARVIS will aggregate all lesson data in this module to create a study guide."}
-                                     </p>
-                                </div>
-                                <div className="flex-1 border border-dashed border-purple-900/50 rounded flex items-center justify-center">
-                                    <button className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded tracking-widest uppercase text-xs shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all">
-                                        INITIATE {selectionType === 'lesson' ? 'LESSON' : 'MODULE'} SYNTHESIS
-                                    </button>
+                                <div className="flex-1 min-h-0 relative rounded-lg overflow-hidden border border-cyan-900/20">
+                                    {activeTab === 'drawboard' ? (
+                                        <Drawboard />
+                                    ) : (
+                                        <textarea className="w-full h-full bg-slate-900/30 p-4 text-cyan-100 font-mono text-sm resize-none outline-none focus:border-cyan-500" placeholder="// Entry system active..."></textarea>
+                                    )}
                                 </div>
                             </div>
-                        )}
-
-                        {/* 5. LIVE LESSON */}
-                        {activeTab === 'live_lesson' && (
-                             <div className="h-full flex flex-col items-center justify-center animate-[fadeIn_0.2s_ease-out]">
-                                {selectionType !== 'lesson' ? (
-                                    <div className="text-center">
-                                        <AlertCircle size={48} className="text-yellow-500 mx-auto mb-4" />
-                                        <h3 className="text-white font-bold uppercase tracking-widest">SELECTION ERROR</h3>
-                                        <p className="text-cyan-600 text-xs mt-2">Please select a specific LESSON from the sidebar<br/>to initiate a live recording session.</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="w-48 h-48 rounded-full border-4 border-cyan-900/30 flex items-center justify-center relative group cursor-pointer">
-                                            <div className="absolute inset-0 rounded-full border-t-4 border-cyan-500 animate-[spin_3s_linear_infinite] opacity-50"></div>
-                                            <div className="absolute inset-0 bg-cyan-500/5 rounded-full group-hover:bg-cyan-500/10 transition-colors"></div>
-                                            <Mic size={48} className="text-cyan-400 group-hover:scale-110 transition-transform" />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-cyan-400 mt-8 tracking-widest uppercase">ACTIVE LISTENING</h3>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                                            <p className="text-xs text-cyan-700 font-mono">TARGET: {subject.teacher}</p>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        )}
-
-                        {/* 6. AUTO TEST */}
-                        {activeTab === 'test' && (
-                            <div className="h-full flex flex-col animate-[fadeIn_0.2s_ease-out]">
-                                <div className="grid grid-cols-2 gap-4 mb-6">
-                                    <div className={`p-4 rounded border ${selectionType === 'module' ? 'bg-cyan-900/30 border-cyan-500' : 'bg-slate-900 border-cyan-900/30'} flex flex-col gap-2`}>
-                                        <span className="text-[10px] text-cyan-600 uppercase font-bold">Scope</span>
-                                        <span className="text-white font-bold">{selectionType === 'module' ? 'CURRENT MODULE' : selectionType === 'lesson' ? 'SINGLE LESSON' : 'FULL COURSE'}</span>
-                                    </div>
-                                    <div className="p-4 rounded bg-slate-900 border border-cyan-900/30 flex flex-col gap-2">
-                                        <span className="text-[10px] text-cyan-600 uppercase font-bold">Difficulty</span>
-                                        <select className="bg-transparent text-cyan-400 text-sm outline-none font-bold">
-                                            <option>STANDARD</option>
-                                            <option>ADVANCED</option>
-                                            <option>OLYMPIAD</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="flex-1 flex flex-col items-center justify-center border border-cyan-900/20 rounded bg-black/20">
-                                    <GraduationCap size={48} className="text-cyan-700 mb-4 opacity-50" />
-                                    <h3 className="text-cyan-400 font-bold tracking-widest uppercase mb-2">GENERATOR READY</h3>
-                                    <p className="text-cyan-700 text-xs text-center max-w-xs mb-6">
-                                        JARVIS will compile a 10-question quiz based on<br/>
-                                        <span className="text-white">{getActiveTitle()}</span>
-                                    </p>
-                                    <button className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded tracking-widest uppercase text-xs shadow-[0_0_20px_rgba(0,255,255,0.3)] transition-all">
-                                        GENERATE EXAM
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Fallback for others */}
-                        {(activeTab === 'class_notebook' || activeTab === 'omni_notebook') && (
-                             <div className="h-full flex items-center justify-center text-cyan-800 font-mono text-xs">
-                                 [ DATA STREAM FOR {activeTab.toUpperCase().replace('_', ' ')}: CONNECTED ]
-                             </div>
-                        )}
-
-                    </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

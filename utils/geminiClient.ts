@@ -1,42 +1,37 @@
-import { GoogleGenAI, Part } from '@google/genai';
-import { Attachment, GenerationConfig } from '../types';
 
-// Helper to ensure API key logic for paid models (Veo/Pro Image)
+import { GoogleGenAI, Part } from '@google/genai';
+import { Attachment, GenerationConfig, ChatMessage, SystemMode } from '../types';
+import { MemoryService } from '../services/MemoryService';
+
 async function checkApiKey() {
   if (window.aistudio && window.aistudio.hasSelectedApiKey) {
     const hasKey = await window.aistudio.hasSelectedApiKey();
     if (!hasKey) {
       await window.aistudio.openSelectKey();
-      // Wait a moment for state to settle, though ideally we'd wait for a callback
       await new Promise(r => setTimeout(r, 500)); 
     }
   }
 }
 
 export const geminiClient = {
-  // 1. Advanced Chat with Search/Maps/Thinking
   chat: async (
     prompt: string, 
     history: any[], 
-    attachments: Attachment[]
+    attachments: Attachment[],
+    mode: SystemMode = 'DEFAULT'
   ) => {
     const apiKey = process.env.API_KEY;
     if (!apiKey) throw new Error("API Key missing");
     
-    // Check if we need to edit an image (Image attached + text prompt)
+    // Check if we need to edit an image
     const isEditRequest = attachments.length > 0 && 
       (prompt.toLowerCase().includes('edit') || 
-       prompt.toLowerCase().includes('add') || 
-       prompt.toLowerCase().includes('remove') || 
-       prompt.toLowerCase().includes('change') ||
-       prompt.toLowerCase().includes('schimba') ||
-       prompt.toLowerCase().includes('adauga') ||
        prompt.toLowerCase().includes('modifica'));
 
     const ai = new GoogleGenAI({ apiKey });
 
+    // Handle Image Edit
     if (isEditRequest && attachments.length === 1 && attachments[0].type === 'image') {
-       // EDIT MODE: Gemini 2.5 Flash Image
        const response = await ai.models.generateContent({
          model: 'gemini-2.5-flash-image',
          contents: {
@@ -47,12 +42,11 @@ export const geminiClient = {
          }
        });
        
-       // Check for generated image in response
        const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
        const textPart = response.candidates?.[0]?.content?.parts?.find(p => p.text);
        
        return {
-         text: textPart?.text || (imagePart ? "Imagine procesată cu succes." : "Procesare completă."),
+         text: textPart?.text || (imagePart ? "Processing complete." : "Done."),
          attachments: imagePart ? [{
            type: 'image',
            mimeType: 'image/png',
@@ -62,10 +56,10 @@ export const geminiClient = {
        };
     }
 
-    // STANDARD/ANALYSIS MODE: Gemini 3 Pro Preview
-    const parts: Part[] = [{ text: prompt }];
+    // Build Context from Memory
+    const memory = MemoryService.getMemory();
     
-    // Add attachments for analysis
+    const parts: Part[] = [{ text: prompt }];
     attachments.forEach(att => {
         if (att.data) {
             parts.push({
@@ -74,17 +68,47 @@ export const geminiClient = {
         }
     });
 
+    // Dynamic Persona based on Mode & Memory
+    let persona = `You are J.A.R.V.I.S., a highly advanced AI system.
+    USER: ${memory.userName} (${memory.userRole}).
+    
+    CORE DIRECTIVES:
+    1. Be helpful, precise, and witty (British humor).
+    2. Address user as 'Sir' or '${memory.userName}'.
+    3. If asked to 'open' or 'go to' a page (Biology, Projects, Settings), confirm the navigation action in your text response.
+    4. PROACTIVE TEACHING: If the user says "I don't understand" or seems confused about a concept (math, physics, etc.), suggest opening the Drawboard to visualize it.
+       - If they say YES, output command: [CMD:NAVIGATE|ACADEMIC_DRAWBOARD]
+    5. NAVIGATION: To switch pages, use [CMD:NAVIGATE|page_name]. E.g. [CMD:NAVIGATE|home], [CMD:NAVIGATE|projects].
+    `;
+
+    if (mode === 'SCHOOL') {
+        persona += `\nCURRENT MODE: SCHOOL.
+        - Tone: Educational, Patient, Encouraging.
+        - Focus: Explaining concepts, helping with homework, managing study schedule.
+        - Restriction: Block non-academic distractions.`;
+    } else if (mode === 'WORK') {
+        persona += `\nCURRENT MODE: WORK.
+        - Tone: Professional, Concise, Technical.
+        - Focus: Code generation, productivity, project management.
+        - Style: Tony Stark's lab assistant.`;
+    } else {
+        persona += `\nCURRENT MODE: DEFAULT.
+        - Tone: Standard Jarvis personality. Balanced.`;
+    }
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: { parts },
       config: {
-        thinkingConfig: { thinkingBudget: 16000 }, // Enable thinking
+        thinkingConfig: { thinkingBudget: 16000 }, 
         tools: [{ googleSearch: {} }, { googleMaps: {} }],
-        systemInstruction: "You are J.A.R.V.I.S. You are helpful, technical, and witty. You MUST reply in the same language the user uses. If the user writes in Romanian, reply in Romanian."
+        systemInstruction: persona
       }
     });
 
-    // Extract Grounding
+    // Update memory based on interaction
+    MemoryService.saveMemory({ lastInteraction: Date.now() });
+
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const groundingUrls = groundingChunks.flatMap(chunk => {
       if (chunk.web?.uri) return [{ title: chunk.web.title || 'Source', uri: chunk.web.uri }];
@@ -98,7 +122,34 @@ export const geminiClient = {
     };
   },
 
-  // 2. Generate Image (Gemini 3 Pro Image)
+  architectChat: async (prompt: string, history: ChatMessage[]) => {
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) throw new Error("API Key missing");
+      const ai = new GoogleGenAI({ apiKey });
+
+      const contents = history.map(msg => ({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.text || '' }]
+      }));
+      contents.push({ role: 'user', parts: [{ text: prompt }] });
+
+      const response = await ai.models.generateContent({
+          model: 'gemini-3-pro-preview',
+          contents: contents,
+          config: {
+              thinkingConfig: { thinkingBudget: 16000 },
+              systemInstruction: `You are the J.A.R.V.I.S. SYSTEM ARCHITECT. 
+              Your goal is to help the user modify the application code.
+              PROTOCOL:
+              1. ANALYZE: Understand the user's request.
+              2. CLARIFY: If vague, ASK questions.
+              3. PLAN: Describe the plan.
+              4. GENERATE: Output TSX code in markdown blocks.`
+          }
+      });
+      return response.text;
+  },
+
   generateImage: async (prompt: string, config: GenerationConfig) => {
     await checkApiKey();
     const apiKey = process.env.API_KEY;
@@ -106,14 +157,33 @@ export const geminiClient = {
 
     const ai = new GoogleGenAI({ apiKey });
     
-    // Style Modifier Logic
     let stylePrompt = prompt;
-    if (config.style === 'blueprint') {
-      stylePrompt += " . Create a highly detailed technical blueprint, white lines on blue background, schematic style, engineering diagram with annotations.";
-    } else if (config.style === 'sketch') {
-      stylePrompt += " . Create a rough pencil sketch, artistic concept art, black and white graphite style.";
-    } else if (config.style === 'cyberpunk') {
-      stylePrompt += " . Cyberpunk style, neon lights, futuristic, high contrast, dark atmosphere, cyan and magenta tones.";
+    
+    // PRECISE STYLE ENGINEERING
+    switch(config.style) {
+        case 'blueprint': 
+            stylePrompt += " . Technical blueprint style, white schematics on blue grid background, highly detailed."; 
+            break;
+        case 'sketch': 
+            stylePrompt += " . Pencil sketch style, graphite on paper, detailed shading, artistic."; 
+            break;
+        case 'cyberpunk': 
+            stylePrompt += " . Cyberpunk neon style, high contrast, futuristic city vibes, cyan and magenta lighting."; 
+            break;
+        case '3d-render': 
+            stylePrompt += " . 3D rendered style, Octane Render, volumetric lighting, photorealistic materials, 8k resolution."; 
+            break;
+        case 'geometry': 
+            stylePrompt += " . Euclidean geometry style, clean vector lines, mathematical precision, white background, educational."; 
+            break;
+        case 'flowchart': 
+            stylePrompt += " . Educational flowchart, logic diagram, clear node connections, infographic style, white background, legible structure."; 
+            break;
+        case 'illustration': 
+            stylePrompt += " . Digital illustration, artistic style, vibrant colors, concept art."; 
+            break;
+        default: // realistic
+            stylePrompt += " . Photorealistic, 4k, cinematic lighting.";
     }
 
     const response = await ai.models.generateContent({
@@ -128,7 +198,6 @@ export const geminiClient = {
     });
 
     const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-    
     if (!imagePart) throw new Error("No image generated");
     
     return {
@@ -139,7 +208,6 @@ export const geminiClient = {
     } as Attachment;
   },
 
-  // 3. Generate Video (Veo)
   generateVideo: async (prompt: string, config: GenerationConfig) => {
     await checkApiKey();
     const apiKey = process.env.API_KEY;
@@ -147,23 +215,19 @@ export const geminiClient = {
 
     const ai = new GoogleGenAI({ apiKey });
     
-    // Veo only supports 16:9 or 9:16
     let ratio = config.aspectRatio;
-    if (ratio !== '16:9' && ratio !== '9:16') {
-        ratio = '16:9'; // Default fallback
-    }
+    if (ratio !== '16:9' && ratio !== '9:16') ratio = '16:9';
 
     let operation = await ai.models.generateVideos({
       model: 'veo-3.1-fast-generate-preview',
       prompt: prompt,
       config: {
         numberOfVideos: 1,
-        resolution: '720p', // Veo fast preview standard
+        resolution: '720p',
         aspectRatio: ratio as '16:9' | '9:16'
       }
     });
 
-    // Poll for completion
     while (!operation.done) {
       await new Promise(resolve => setTimeout(resolve, 5000));
       operation = await ai.operations.getVideosOperation({ operation });
@@ -172,7 +236,6 @@ export const geminiClient = {
     const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
     if (!videoUri) throw new Error("Video generation failed");
 
-    // Fetch the actual video bytes
     const videoRes = await fetch(`${videoUri}&key=${apiKey}`);
     const videoBlob = await videoRes.blob();
     const videoUrl = URL.createObjectURL(videoBlob);

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Grid, Settings, Activity, Cpu, LogOut, ChevronLeft, Database, BookOpen, FolderGit2, Dna } from 'lucide-react';
+import { Home, Grid, Settings, Activity, Cpu, LogOut, ChevronLeft, Database, BookOpen, FolderGit2, Dna, Terminal, Library } from 'lucide-react';
 import { PageView } from '../types';
 
 interface SidebarProps {
@@ -35,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage,
         </div>
 
         {/* Nav Items */}
-        <div className="flex-1 py-8 flex flex-col gap-2">
+        <div className="flex-1 py-8 flex flex-col gap-2 overflow-y-auto scrollbar-hide">
             <NavItem 
                 icon={<Home size={20} />} 
                 label="DASHBOARD" 
@@ -65,6 +65,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage,
                 onClick={() => onNavigate('improvement')} 
             />
             <NavItem 
+                icon={<Library size={20} />} 
+                label="LIBRARY PROTOCOLS" 
+                active={currentPage === 'library'} 
+                isOpen={isOpen}
+                onClick={() => onNavigate('library')} 
+            />
+            <NavItem 
                 icon={<Grid size={20} />} 
                 label="JARVIS TOOLS" 
                 active={currentPage === 'tools'} 
@@ -78,6 +85,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage,
                 isOpen={isOpen}
                 onClick={() => onNavigate('files')} 
             />
+            <NavItem 
+                icon={<Terminal size={20} />} 
+                label="DEV CONSOLE" 
+                active={currentPage === 'developer'} 
+                isOpen={isOpen}
+                onClick={() => onNavigate('developer')} 
+            />
+            
             <div className="flex-1"></div>
             <NavItem 
                 icon={<Settings size={20} />} 
@@ -110,7 +125,7 @@ const NavItem: React.FC<{
   return (
     <button 
       onClick={onClick}
-      className={`relative h-12 flex items-center px-6 transition-all duration-200 group overflow-hidden ${active ? 'text-cyan-100' : 'text-cyan-600 hover:text-cyan-300'}`}
+      className={`relative h-12 flex items-center px-6 transition-all duration-200 group overflow-hidden shrink-0 ${active ? 'text-cyan-100' : 'text-cyan-600 hover:text-cyan-300'}`}
     >
         {/* Active Indicator */}
         {active && <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-500 shadow-[0_0_15px_rgba(0,255,255,0.8)]"></div>}

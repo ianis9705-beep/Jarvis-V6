@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Cloud, CloudRain, Sun, Wind, CheckSquare, Square, Plus, Trash2, Calendar as CalIcon, Music, Play, SkipForward } from 'lucide-react';
+import { Cloud, CloudRain, Sun, Wind, CheckSquare, Square, Plus, Trash2, Calendar as CalIcon, Music, Play, SkipForward, Shield, Battery, Activity, ArrowUp, User, Zap, Brain } from 'lucide-react';
 import { TodoItem } from '../types';
 
 // --- WEATHER WIDGET ---
@@ -200,4 +201,71 @@ export const MediaWidget: React.FC = () => {
         </div>
     </div>
   );
+};
+
+// --- BIO MONITOR WIDGET (REPLACES ARMOR STATUS) ---
+export const ArmorWidget: React.FC = () => {
+    // These values would ideally come from the 'Mental' and 'Physique' sections
+    const [energyLevel, setEnergyLevel] = useState(85);
+    const [focusLevel, setFocusLevel] = useState(92);
+    const [mood, setMood] = useState('FOCUSED');
+
+    useEffect(() => {
+        // Simulate bio-fluctuations
+        const interval = setInterval(() => {
+            setEnergyLevel(prev => Math.min(100, Math.max(10, prev + (Math.random() - 0.5) * 2)));
+            setFocusLevel(prev => Math.min(100, Math.max(10, prev + (Math.random() - 0.5) * 5)));
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="relative bg-slate-950/80 border border-cyan-900/60 rounded-sm p-4 backdrop-blur-md overflow-hidden min-h-[140px]">
+             {/* HUD Circles */}
+             <div className="absolute -right-4 -top-4 w-24 h-24 border border-cyan-900/30 rounded-full flex items-center justify-center animate-[spin_10s_linear_infinite]">
+                 <div className="w-16 h-16 border-b border-cyan-500/50 rounded-full"></div>
+             </div>
+
+             <div className="flex items-center justify-between mb-4 relative z-10">
+                 <span className="text-[10px] font-bold tracking-[0.2em] text-cyan-500 uppercase flex items-center gap-2">
+                     <Activity size={12} /> BIO-MONITOR
+                 </span>
+                 <span className="text-[9px] font-mono text-cyan-700">SUBJECT: IANIS</span>
+             </div>
+
+             <div className="grid grid-cols-2 gap-4 relative z-10">
+                 {/* Bio-Integrity (Overall Health/Focus) */}
+                 <div className="flex flex-col items-center">
+                     <div className="relative w-16 h-16 flex items-center justify-center">
+                         <svg className="w-full h-full transform -rotate-90">
+                             <circle cx="32" cy="32" r="28" stroke="#1e293b" strokeWidth="4" fill="none" />
+                             <circle cx="32" cy="32" r="28" stroke={focusLevel > 50 ? "#06b6d4" : "#eab308"} strokeWidth="4" fill="none" strokeDasharray="175" strokeDashoffset={175 - (175 * focusLevel) / 100} className="transition-all duration-1000" />
+                         </svg>
+                         <div className="absolute flex flex-col items-center">
+                            <span className="text-sm font-bold text-white">{Math.round(focusLevel)}%</span>
+                         </div>
+                     </div>
+                     <span className="text-[9px] text-cyan-600 uppercase tracking-wider mt-1">Focus State</span>
+                 </div>
+
+                 {/* Vitals */}
+                 <div className="flex flex-col justify-center gap-2">
+                     <div className="flex justify-between items-center">
+                         <div className="flex items-center gap-1 text-[9px] text-cyan-400 uppercase"><Zap size={10} /> Energy</div>
+                         <div className="w-12 h-1 bg-slate-800 rounded-full overflow-hidden">
+                             <div className={`h-full ${energyLevel > 40 ? 'bg-cyan-400' : 'bg-red-500'} transition-all duration-1000`} style={{width: `${energyLevel}%`}}></div>
+                         </div>
+                     </div>
+                     <div className="flex justify-between items-center">
+                         <div className="flex items-center gap-1 text-[9px] text-cyan-400 uppercase"><Brain size={10} /> Mood</div>
+                         <span className="text-[9px] font-mono text-white animate-pulse">{mood}</span>
+                     </div>
+                     <div className="flex justify-between items-center">
+                         <div className="flex items-center gap-1 text-[9px] text-cyan-400 uppercase"><User size={10} /> Status</div>
+                         <span className="text-[9px] font-mono text-green-400">ONLINE</span>
+                     </div>
+                 </div>
+             </div>
+        </div>
+    );
 };

@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { GenerationConfig, AspectRatio, ImageSize, MediaType, RenderStyle } from '../types';
-import { Settings, Image, Film, X, PenTool } from 'lucide-react';
+import { Settings, Image, Film, X, PenTool, Box, Hexagon, GitFork, Brush } from 'lucide-react';
 
 interface GenerationPanelProps {
   config: GenerationConfig;
@@ -12,12 +13,23 @@ interface GenerationPanelProps {
 export const GenerationPanel: React.FC<GenerationPanelProps> = ({ config, onChange, onClose, visible }) => {
   if (!visible) return null;
 
+  const STYLES: { id: RenderStyle; label: string; icon?: React.ReactNode }[] = [
+      { id: 'realistic', label: 'REALISTIC' },
+      { id: 'blueprint', label: 'BLUEPRINT' },
+      { id: 'sketch', label: 'SKETCH' },
+      { id: 'cyberpunk', label: 'CYBERPUNK' },
+      { id: '3d-render', label: '3D RENDER', icon: <Box size={10} /> },
+      { id: 'geometry', label: 'GEOMETRY', icon: <Hexagon size={10} /> },
+      { id: 'flowchart', label: 'FLOWCHART', icon: <GitFork size={10} /> },
+      { id: 'illustration', label: 'ART/DRAWING', icon: <Brush size={10} /> },
+  ];
+
   return (
-    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl rounded-lg p-4 shadow-[0_0_50px_rgba(0,255,255,0.1)] z-50 animate-[slideUp_0.3s_ease-out]">
+    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-full max-w-3xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl rounded-lg p-4 shadow-[0_0_50px_rgba(0,255,255,0.1)] z-50 animate-[slideUp_0.3s_ease-out]">
       <div className="flex justify-between items-center mb-4 border-b border-cyan-900/50 pb-2">
         <div className="flex items-center gap-2 text-cyan-400">
             <Settings size={16} />
-            <span className="font-bold tracking-widest text-xs uppercase">Generation Protocol</span>
+            <span className="font-bold tracking-widest text-xs uppercase">Visual Synthesis Protocol</span>
         </div>
         <button onClick={onClose} className="text-cyan-700 hover:text-cyan-400 transition-colors">
             <X size={16} />
@@ -45,17 +57,18 @@ export const GenerationPanel: React.FC<GenerationPanelProps> = ({ config, onChan
             </div>
         </div>
 
-        {/* STYLE SELECTOR */}
-        <div className="flex flex-col gap-2">
+        {/* STYLE SELECTOR (EXPANDED) */}
+        <div className="lg:col-span-2 flex flex-col gap-2">
             <label className="text-[10px] text-cyan-600 uppercase tracking-wider font-bold">Render Style</label>
-            <div className="grid grid-cols-2 gap-1">
-                {(['realistic', 'blueprint', 'sketch', 'cyberpunk'] as RenderStyle[]).map((style) => (
+            <div className="grid grid-cols-4 gap-1">
+                {STYLES.map((style) => (
                     <button
-                        key={style}
-                        onClick={() => onChange({ ...config, style })}
-                        className={`text-[10px] py-1 px-1 border rounded transition-all truncate uppercase ${config.style === style ? 'border-cyan-400 text-cyan-100 bg-cyan-900/40' : 'border-cyan-900/30 text-cyan-800 hover:border-cyan-700'}`}
+                        key={style.id}
+                        onClick={() => onChange({ ...config, style: style.id })}
+                        className={`text-[9px] py-1.5 px-1 border rounded transition-all truncate uppercase flex items-center justify-center gap-1 ${config.style === style.id ? 'border-cyan-400 text-cyan-100 bg-cyan-900/40 shadow-[0_0_5px_rgba(0,255,255,0.2)]' : 'border-cyan-900/30 text-cyan-800 hover:border-cyan-700'}`}
                     >
-                        {style}
+                        {style.icon}
+                        {style.label}
                     </button>
                 ))}
             </div>
@@ -72,22 +85,6 @@ export const GenerationPanel: React.FC<GenerationPanelProps> = ({ config, onChan
                         className={`text-[10px] py-1 border rounded transition-all ${config.aspectRatio === ratio ? 'border-cyan-400 text-cyan-100 bg-cyan-900/40' : 'border-cyan-900/30 text-cyan-800 hover:border-cyan-700'}`}
                     >
                         {ratio}
-                    </button>
-                ))}
-            </div>
-        </div>
-
-        {/* RESOLUTION (Image Only) */}
-        <div className={`flex flex-col gap-2 transition-opacity duration-300 ${config.mode === 'video' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-            <label className="text-[10px] text-cyan-600 uppercase tracking-wider font-bold">Resolution</label>
-            <div className="flex gap-1">
-                 {['1K', '2K', '4K'].map((size) => (
-                    <button
-                        key={size}
-                        onClick={() => onChange({ ...config, imageSize: size as ImageSize })}
-                        className={`flex-1 text-[10px] py-2 border rounded transition-all ${config.imageSize === size ? 'border-cyan-400 text-cyan-100 bg-cyan-900/40' : 'border-cyan-900/30 text-cyan-800 hover:border-cyan-700'}`}
-                    >
-                        {size}
                     </button>
                 ))}
             </div>

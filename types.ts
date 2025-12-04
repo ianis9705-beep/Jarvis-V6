@@ -40,8 +40,9 @@ export interface ChatMessage {
 export type AspectRatio = '1:1' | '3:4' | '4:3' | '9:16' | '16:9' | '2:3' | '3:2' | '21:9';
 export type ImageSize = '1K' | '2K' | '4K';
 export type MediaType = 'text' | 'image' | 'video';
-export type RenderStyle = 'realistic' | 'blueprint' | 'sketch' | 'cyberpunk';
+export type RenderStyle = 'realistic' | 'blueprint' | 'sketch' | 'cyberpunk' | '3d-render' | 'geometry' | 'flowchart' | 'illustration';
 export type AIProvider = 'gemini' | 'ollama';
+export type SystemMode = 'DEFAULT' | 'SCHOOL' | 'WORK';
 
 export interface GenerationConfig {
   aspectRatio: AspectRatio;
@@ -50,7 +51,7 @@ export interface GenerationConfig {
   style: RenderStyle;
 }
 
-export type PageView = 'home' | 'tools' | 'settings' | 'files' | 'academic' | 'projects' | 'improvement';
+export type PageView = 'home' | 'tools' | 'settings' | 'files' | 'academic' | 'projects' | 'improvement' | 'developer' | 'library';
 
 export interface TodoItem {
   id: string;
@@ -67,4 +68,54 @@ export interface KnowledgeFile {
   status: 'indexed' | 'scanning' | 'corrupted' | 'missing';
   active: boolean;
   lastScanned: string;
+}
+
+export interface StoredFile {
+  id: string;
+  name: string;
+  type: 'code' | 'image' | 'doc' | 'video' | 'audio' | 'archive';
+  size: string;
+  date: string;
+  status: 'SECURE' | 'ANALYZING' | 'CORRUPTED' | 'MISSING';
+  validity?: 'VERIFIED' | 'QUESTIONABLE' | 'INACCURATE' | 'PENDING'; // New field for critical analysis
+  linkedContext?: string; // e.g. 'academic-biology', 'project-1'
+}
+
+export interface SystemVersion {
+  id: string;
+  version: string;
+  timestamp: string;
+  description: string;
+  codeSnippet: string; // The code state at that time
+  author: 'IANIS' | 'JARVIS_ARCHITECT';
+}
+
+export interface NotificationItem {
+  id: string;
+  type: 'SOCIAL' | 'SYSTEM' | 'REMINDER' | 'WARNING';
+  source: string; // e.g., "Instagram", "Calendar", "System"
+  message: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface MemoryContext {
+  userName: string;
+  userRole: string;
+  lastInteraction: number;
+  learningStyle: 'visual' | 'auditory' | 'text';
+  activeProjects: string[];
+}
+
+export interface OllamaModelDefinition {
+    id: string;
+    name: string;
+    description: string;
+    capabilities: string[];
+    recommendedFor: string;
+}
+
+export interface SystemCommand {
+    type: 'TASK' | 'OPEN' | 'NAVIGATE' | 'TIMER';
+    payload: string;
 }

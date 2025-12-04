@@ -297,15 +297,16 @@ const DetailModal: React.FC<{
 
     React.useEffect(() => {
         let interval: any;
-        if (timer?.active && timer.time > 0) {
+        if (timer?.active) {
             interval = setInterval(() => {
-                setTimer(prev => (prev ? { ...prev, time: prev.time - 1 } : null));
+                setTimer(prev => {
+                    if (!prev || prev.time <= 0) return null;
+                    return { ...prev, time: prev.time - 1 };
+                });
             }, 1000);
-        } else if (timer?.time === 0) {
-            setTimer(null);
         }
         return () => clearInterval(interval);
-    }, [timer]);
+    }, [timer?.active]);
 
     const handleLogSet = (day: string, exercise: string, weight: string, reps: string) => {
         setWorkoutLogs(prev => {
@@ -728,4 +729,3 @@ const MealItem: React.FC<{ name: string; cal: string; onClick?: () => void }> = 
         <span className="text-[10px] text-cyan-600 font-mono">{cal} kcal</span>
     </div>
 );
-    
