@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Grid, Settings, Activity, Cpu, LogOut, ChevronLeft, Database, BookOpen, FolderGit2, Dna, Terminal, Library } from 'lucide-react';
+import { Home, Grid, Settings, Activity, Cpu, LogOut, ChevronLeft, Database, BookOpen, FolderGit2, Dna, Terminal, Library, Users } from 'lucide-react';
 import { PageView } from '../types';
 
 interface SidebarProps {
@@ -70,6 +70,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage,
                 active={currentPage === 'library'} 
                 isOpen={isOpen}
                 onClick={() => onNavigate('library')} 
+            />
+            <NavItem 
+                icon={<Users size={20} />} 
+                label="PEOPLE PROTOCOLS" 
+                active={currentPage === 'people'} 
+                isOpen={isOpen}
+                onClick={() => onNavigate('people')} 
             />
             <NavItem 
                 icon={<Grid size={20} />} 

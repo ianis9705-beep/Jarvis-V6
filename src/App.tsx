@@ -208,6 +208,33 @@ const App: React.FC = () => {
       }
   };
 
+  const speakText = (text: string) => {
+      if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          // Remove command tags before speaking
+          const cleanText = text.replace(/\[CMD:.*?\]/g, '').trim();
+          if (!cleanText) return;
+
+          const utterance = new SpeechSynthesisUtterance(cleanText);
+          const savedSpeed = localStorage.getItem('JARVIS_VOICE_SPEED');
+          const savedPitch = localStorage.getItem('JARVIS_VOICE_PITCH');
+          const savedVol = localStorage.getItem('JARVIS_VOLUME');
+          const savedVoiceURI = localStorage.getItem('JARVIS_SELECTED_VOICE_URI');
+
+          if (savedSpeed) utterance.rate = parseFloat(savedSpeed);
+          if (savedPitch) utterance.pitch = parseFloat(savedPitch);
+          if (savedVol) utterance.volume = parseFloat(savedVol);
+
+          if (savedVoiceURI) {
+              const voices = window.speechSynthesis.getVoices();
+              const voice = voices.find(v => v.voiceURI === savedVoiceURI);
+              if (voice) utterance.voice = voice;
+          }
+
+          window.speechSynthesis.speak(utterance);
+      }
+  };
+
   const handleSendMessage = async (text: string, attachments: Attachment[]) => {
     lastInteractionRef.current = Date.now();
     setSuggestion(null);
@@ -241,10 +268,12 @@ const App: React.FC = () => {
                  const img = await ollamaClient.generateImage(text, genConfig);
                  responseMsg.text = "Visual asset synthesized via Local Vector Engine.";
                  responseMsg.attachments = [img];
+                 speakText("Visual asset synthesized.");
             } else {
                  const result = await ollamaClient.chat(text, chatHistory, attachments);
                  responseMsg.text = result.text;
                  executeSystemCommands(result.text); // Check for commands
+                 speakText(result.text);
             }
         } 
         // --- CLOUD GEMINI PATH ---
@@ -255,16 +284,19 @@ const App: React.FC = () => {
                     const video = await geminiClient.generateVideo(text, genConfig);
                     responseMsg.text = "Video sequence rendered via Veo.";
                     responseMsg.attachments = [video];
+                    speakText("Video sequence rendered.");
                  } else {
                     const img = await geminiClient.generateImage(text, imgConfig);
                     responseMsg.text = "Visual asset generated.";
                     responseMsg.attachments = [img];
+                    speakText("Visual asset generated.");
                  }
             } else {
                  const result = await geminiClient.chat(text, chatHistory, attachments, systemMode);
                  responseMsg.text = result.text;
                  responseMsg.groundingUrls = result.groundingUrls;
                  executeSystemCommands(result.text); // Check for commands
+                 speakText(result.text);
             }
         }
         
@@ -276,6 +308,7 @@ const App: React.FC = () => {
             text: `ERROR: ${err.message}. Check uplink status.`,
             timestamp: new Date()
         }]);
+        speakText("Error encountered. Please check uplink status.");
     } finally {
         setIsProcessing(false);
     }

@@ -51,7 +51,7 @@ export interface GenerationConfig {
   style: RenderStyle;
 }
 
-export type PageView = 'home' | 'tools' | 'settings' | 'files' | 'academic' | 'projects' | 'improvement' | 'developer' | 'library';
+export type PageView = 'home' | 'tools' | 'settings' | 'files' | 'academic' | 'projects' | 'improvement' | 'developer' | 'library' | 'people';
 
 export interface TodoItem {
   id: string;
@@ -77,8 +77,8 @@ export interface StoredFile {
   size: string;
   date: string;
   status: 'SECURE' | 'ANALYZING' | 'CORRUPTED' | 'MISSING';
-  validity?: 'VERIFIED' | 'QUESTIONABLE' | 'INACCURATE' | 'PENDING'; // New field for critical analysis
-  linkedContext?: string; // e.g. 'academic-biology', 'project-1'
+  validity?: 'VERIFIED' | 'QUESTIONABLE' | 'INACCURATE' | 'PENDING';
+  linkedContext?: string;
 }
 
 export interface SystemVersion {
@@ -86,14 +86,14 @@ export interface SystemVersion {
   version: string;
   timestamp: string;
   description: string;
-  codeSnippet: string; // The code state at that time
+  codeSnippet: string;
   author: 'IANIS' | 'JARVIS_ARCHITECT';
 }
 
 export interface NotificationItem {
   id: string;
   type: 'SOCIAL' | 'SYSTEM' | 'REMINDER' | 'WARNING';
-  source: string; // e.g., "Instagram", "Calendar", "System"
+  source: string;
   message: string;
   timestamp: string;
   read: boolean;
@@ -119,3 +119,16 @@ export interface SystemCommand {
     type: 'TASK' | 'OPEN' | 'NAVIGATE' | 'TIMER';
     payload: string;
 }
+
+export interface Person {
+    id: string;
+    name: string;
+    relation: 'ASSOCIATE' | 'FRIEND' | 'FAMILY' | 'HOSTILE' | 'UNKNOWN';
+    trustLevel: number; // 0-100
+    status: 'ACTIVE' | 'OFFLINE' | 'MONITORED';
+    lastSeen: string;
+    notes: string;
+    avatarUrl?: string; // base64 or url
+}
+
+export type VisionMode = 'IDLE' | 'OBJECT_SCAN' | 'TEXT_SCAN' | 'BIO_SCAN' | 'GESTURE_CONTROL';

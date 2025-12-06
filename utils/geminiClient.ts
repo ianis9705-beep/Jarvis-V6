@@ -75,25 +75,18 @@ export const geminiClient = {
     CORE DIRECTIVES:
     1. Be helpful, precise, and witty (British humor).
     2. Address user as 'Sir' or '${memory.userName}'.
-    3. If asked to 'open' or 'go to' a page (Biology, Projects, Settings), confirm the navigation action in your text response.
-    4. PROACTIVE TEACHING: If the user says "I don't understand" or seems confused about a concept (math, physics, etc.), suggest opening the Drawboard to visualize it.
-       - If they say YES, output command: [CMD:NAVIGATE|ACADEMIC_DRAWBOARD]
-    5. NAVIGATION: To switch pages, use [CMD:NAVIGATE|page_name]. E.g. [CMD:NAVIGATE|home], [CMD:NAVIGATE|projects].
+    3. If asked to 'open' or 'go to' a page, confirm navigation.
+    4. PROACTIVE TEACHING: If user is confused, suggest Drawboard.
+    5. PC CONTROL: You can control the PC. If asked to open an app (e.g. "Open YouTube", "Open Notepad"), output: [CMD:OPEN_APP|app_name_or_url].
+    
+    VISION & TRANSLATION PROTOCOLS:
+    - If image provided contains foreign text, TRANSLATE IT TO ROMANIAN.
     `;
 
     if (mode === 'SCHOOL') {
-        persona += `\nCURRENT MODE: SCHOOL.
-        - Tone: Educational, Patient, Encouraging.
-        - Focus: Explaining concepts, helping with homework, managing study schedule.
-        - Restriction: Block non-academic distractions.`;
+        persona += `\nCURRENT MODE: SCHOOL. Tone: Educational.`;
     } else if (mode === 'WORK') {
-        persona += `\nCURRENT MODE: WORK.
-        - Tone: Professional, Concise, Technical.
-        - Focus: Code generation, productivity, project management.
-        - Style: Tony Stark's lab assistant.`;
-    } else {
-        persona += `\nCURRENT MODE: DEFAULT.
-        - Tone: Standard Jarvis personality. Balanced.`;
+        persona += `\nCURRENT MODE: WORK. Tone: Technical.`;
     }
 
     const response = await ai.models.generateContent({
@@ -106,7 +99,6 @@ export const geminiClient = {
       }
     });
 
-    // Update memory based on interaction
     MemoryService.saveMemory({ lastInteraction: Date.now() });
 
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
@@ -158,32 +150,15 @@ export const geminiClient = {
     const ai = new GoogleGenAI({ apiKey });
     
     let stylePrompt = prompt;
-    
-    // PRECISE STYLE ENGINEERING
     switch(config.style) {
-        case 'blueprint': 
-            stylePrompt += " . Technical blueprint style, white schematics on blue grid background, highly detailed."; 
-            break;
-        case 'sketch': 
-            stylePrompt += " . Pencil sketch style, graphite on paper, detailed shading, artistic."; 
-            break;
-        case 'cyberpunk': 
-            stylePrompt += " . Cyberpunk neon style, high contrast, futuristic city vibes, cyan and magenta lighting."; 
-            break;
-        case '3d-render': 
-            stylePrompt += " . 3D rendered style, Octane Render, volumetric lighting, photorealistic materials, 8k resolution."; 
-            break;
-        case 'geometry': 
-            stylePrompt += " . Euclidean geometry style, clean vector lines, mathematical precision, white background, educational."; 
-            break;
-        case 'flowchart': 
-            stylePrompt += " . Educational flowchart, logic diagram, clear node connections, infographic style, white background, legible structure."; 
-            break;
-        case 'illustration': 
-            stylePrompt += " . Digital illustration, artistic style, vibrant colors, concept art."; 
-            break;
-        default: // realistic
-            stylePrompt += " . Photorealistic, 4k, cinematic lighting.";
+        case 'blueprint': stylePrompt += " . Technical blueprint style, white schematics on blue grid background, highly detailed."; break;
+        case 'sketch': stylePrompt += " . Pencil sketch style, graphite on paper, detailed shading, artistic."; break;
+        case 'cyberpunk': stylePrompt += " . Cyberpunk neon style, high contrast, futuristic city vibes, cyan and magenta lighting."; break;
+        case '3d-render': stylePrompt += " . 3D rendered style, Octane Render, volumetric lighting, photorealistic materials, 8k resolution."; break;
+        case 'geometry': stylePrompt += " . Euclidean geometry style, clean vector lines, mathematical precision, white background, educational."; break;
+        case 'flowchart': stylePrompt += " . Educational flowchart, logic diagram, clear node connections, infographic style, white background, legible structure."; break;
+        case 'illustration': stylePrompt += " . Digital illustration, artistic style, vibrant colors, concept art."; break;
+        default: stylePrompt += " . Photorealistic, 4k, cinematic lighting.";
     }
 
     const response = await ai.models.generateContent({

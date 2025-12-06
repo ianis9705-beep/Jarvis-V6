@@ -1,6 +1,9 @@
 
-import React, { useState } from 'react';
-import { Dna, TrendingUp, Coins, Wallet, Activity, Utensils, Brain, Dumbbell, Zap, X, ChefHat, Calendar, CheckCircle2, Maximize2, ArrowUpRight, ArrowDownRight, Droplets, ShoppingCart, Timer, Smile, Flame, Plus, Save } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Dna, TrendingUp, Coins, Activity, Utensils, Brain, Dumbbell, Zap, X, ChefHat, Flame, Droplets, ShoppingCart, Timer, Smile, Plus, Save, Camera, ScanLine, ArrowRight, BarChart3, AlertTriangle, CheckCircle2, Maximize2, RefreshCw, CandlestickChart, ArrowUp, ArrowDown, HeartPulse, Send } from 'lucide-react';
+import { ollamaClient } from '../utils/ollamaClient';
+import { Attachment, ChatMessage } from '../types';
+import { geminiClient } from '../utils/geminiClient';
 
 type SectionType = 'FINANCE' | 'NUTRITION' | 'PHYSIQUE' | 'MENTAL';
 
@@ -26,7 +29,7 @@ export const ImprovementPage: React.FC = () => {
   ];
 
   // WORKOUT SCHEDULE DATA
-  const WEEKLY_ROUTINE: Record<string, { focus: string; type: string; exercises: string[] }> = {
+  const [weeklyRoutine, setWeeklyRoutine] = useState<Record<string, { focus: string; type: string; exercises: string[] }>>({
     LUNI: { 
         focus: 'PUSH HYPERTROPHY', 
         type: 'CALISTHENICS',
@@ -62,9 +65,16 @@ export const ImprovementPage: React.FC = () => {
         type: 'REST',
         exercises: ['Rest Day', 'Cold Plunge (Optional)', 'Walk: 30m', 'Meal Prep'] 
     }
+  });
+
+  const updateRoutine = (day: string, newFocus: string, newExercises: string[]) => {
+      setWeeklyRoutine(prev => ({
+          ...prev,
+          [day]: { ...prev[day], focus: newFocus, exercises: newExercises }
+      }));
   };
 
-  const currentWorkout = WEEKLY_ROUTINE[activeDay] || WEEKLY_ROUTINE['LUNI'];
+  const currentWorkout = weeklyRoutine[activeDay] || weeklyRoutine['LUNI'];
 
   return (
     <div className="w-full h-full p-4 md:p-8 animate-[fadeIn_0.5s_ease-out] overflow-y-auto relative">
@@ -80,7 +90,7 @@ export const ImprovementPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10">
           
-          {/* 1. ASSET MANAGEMENT (FINANCE) */}
+          {/* 1. ASSET MANAGEMENT */}
           <DashboardCard 
             title="FINANCIAL ASSETS" 
             icon={<Coins size={20} className="text-green-400" />} 
@@ -99,26 +109,15 @@ export const ImprovementPage: React.FC = () => {
                        <div className="text-[9px] text-cyan-800">Target: $1000</div>
                    </div>
                </div>
-               <div className="space-y-3">
-                   <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                       <span className="text-xs text-slate-400 font-mono">Bitcoin (BTC)</span>
-                       <span className="text-xs text-white font-mono">0.0042 BTC</span>
-                   </div>
-                   <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                       <span className="text-xs text-slate-400 font-mono">Ethereum (ETH)</span>
-                       <span className="text-xs text-white font-mono">0.15 ETH</span>
-                   </div>
-               </div>
           </DashboardCard>
 
-          {/* 2. BIO-FUEL LOGISTICS (NUTRITION) */}
+          {/* 2. BIO-FUEL LOGISTICS */}
           <DashboardCard
              title="BIO-FUEL LOGISTICS"
              icon={<Activity size={20} className="text-orange-400" />}
              bgIcon={<Utensils size={48} className="text-orange-500" />}
              onExpand={() => setExpandedSection('NUTRITION')}
           >
-               {/* Calorie Target */}
                <div className="mb-6 p-3 rounded bg-slate-900/50 border border-orange-900/30">
                    <div className="flex justify-between items-center mb-2">
                        <div className="flex items-center gap-2 text-orange-400">
@@ -131,30 +130,19 @@ export const ImprovementPage: React.FC = () => {
                        <div className="h-full bg-gradient-to-r from-yellow-600 to-orange-500 w-[57%]"></div>
                    </div>
                </div>
-
-               {/* Macros */}
-               <div className="flex gap-2 mb-6">
-                   <MacroBar label="PROT" val={140} max={180} color="bg-red-500" />
-                   <MacroBar label="CARB" val={210} max={250} color="bg-yellow-500" />
-                   <MacroBar label="FATS" val={55} max={80} color="bg-blue-500" />
-               </div>
-
-               {/* Meal Plan Preview */}
                <div className="space-y-2">
-                   <MealItem name="Breakfast: Oatmeal & Whey" cal="450" />
+                   <MealItem name="Breakfast: Oatmeal" cal="450" />
                    <MealItem name="Lunch: Chicken & Rice" cal="600" />
-                   <MealItem name="Dinner: Salmon & Veg" cal="550" />
                </div>
           </DashboardCard>
 
-          {/* 3. HARDWARE UPGRADES (PHYSIQUE) */}
+          {/* 3. HARDWARE UPGRADES */}
           <DashboardCard
             title="HARDWARE UPGRADES"
             icon={<Zap size={20} className="text-red-400" />}
             bgIcon={<Dumbbell size={48} className="text-red-500" />}
             onExpand={() => setExpandedSection('PHYSIQUE')}
           >
-               {/* Biometrics Header */}
                <div className="flex gap-4 mb-4">
                     <div className="flex-1 bg-red-900/10 border border-red-500/20 p-2 rounded text-center">
                         <div className="text-xl font-bold text-white">74kg</div>
@@ -165,32 +153,13 @@ export const ImprovementPage: React.FC = () => {
                         <div className="text-[9px] text-red-400 uppercase tracking-widest">BF Ratio</div>
                     </div>
                </div>
-
-               {/* Day Selector Summary */}
-               <div className="flex justify-between items-center gap-1 mb-4 bg-slate-900/50 p-1 rounded border border-red-900/30">
-                   {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => {
-                       const fullDay = Object.keys(WEEKLY_ROUTINE)[i];
-                       return (
-                           <button 
-                               key={d}
-                               onClick={() => setActiveDay(fullDay)}
-                               className={`flex-1 text-[8px] font-bold py-1 rounded text-center transition-colors ${activeDay === fullDay ? 'bg-red-600 text-white' : 'text-red-800 hover:text-red-400'}`}
-                           >
-                               {d}
-                           </button>
-                       )
-                   })}
-               </div>
-
-               {/* Workout Preview */}
                <div className="bg-red-950/10 border border-red-500/20 rounded p-2 text-xs text-red-200 font-mono">
                    <div className="font-bold text-red-500 mb-1">{activeDay}: {currentWorkout.focus}</div>
-                   {currentWorkout.exercises.slice(0, 2).map((ex, i) => <div key={i}>• {ex}</div>)}
-                   <div className="text-[9px] text-red-500 mt-1 cursor-pointer hover:underline" onClick={() => setExpandedSection('PHYSIQUE')}>+ VIEW FULL ROUTINE</div>
+                   <div className="text-[9px] text-red-500 mt-1 cursor-pointer hover:underline" onClick={() => setExpandedSection('PHYSIQUE')}>+ VIEW FULL ROUTINE & PROGRESS</div>
                </div>
           </DashboardCard>
 
-          {/* 4. NEURAL STABILITY (MENTAL) */}
+          {/* 4. NEURAL STABILITY */}
           <DashboardCard
             title="NEURAL STABILITY"
             icon={<Activity size={20} className="text-purple-400" />}
@@ -206,17 +175,6 @@ export const ImprovementPage: React.FC = () => {
                        <div className="h-full bg-purple-500 w-[85%] shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div>
                    </div>
                </div>
-
-               <div className="grid grid-cols-2 gap-4">
-                    <button className="p-3 rounded border border-purple-500/30 bg-purple-900/10 flex flex-col items-center gap-1 hover:bg-purple-900/30 transition-colors">
-                        <Brain size={18} className="text-purple-400" />
-                        <span className="text-[9px] font-bold uppercase text-purple-200">Log Mood</span>
-                    </button>
-                    <button className="p-3 rounded border border-purple-500/30 bg-purple-900/10 flex flex-col items-center gap-1 hover:bg-purple-900/30 transition-colors">
-                        <Timer size={18} className="text-purple-400" />
-                        <span className="text-[9px] font-bold uppercase text-purple-200">Meditate</span>
-                    </button>
-               </div>
           </DashboardCard>
       </div>
 
@@ -225,15 +183,16 @@ export const ImprovementPage: React.FC = () => {
           <DetailModal 
             section={expandedSection} 
             onClose={() => setExpandedSection(null)}
-            weeklyRoutine={WEEKLY_ROUTINE}
+            weeklyRoutine={weeklyRoutine}
             activeDay={activeDay}
             setActiveDay={setActiveDay}
             onSelectMeal={(m) => setSelectedMeal(m)}
             financialData={FINANCIAL_YEAR_DATA}
+            onUpdateRoutine={updateRoutine}
           />
       )}
 
-      {/* RECIPE MODAL (Nested) */}
+      {/* RECIPE MODAL */}
       {selectedMeal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
               <div className="w-full max-w-md bg-slate-950 border border-orange-500/50 rounded-lg p-6 relative shadow-[0_0_30px_rgba(255,165,0,0.2)]">
@@ -258,22 +217,15 @@ export const ImprovementPage: React.FC = () => {
 const DashboardCard: React.FC<{ title: string; icon: React.ReactNode; bgIcon: React.ReactNode; children: React.ReactNode; onExpand: () => void }> = ({ title, icon, bgIcon, children, onExpand }) => (
     <div className="bg-slate-950/80 border border-cyan-900/40 rounded-lg p-6 relative overflow-hidden group hover:border-cyan-500/40 transition-all">
         <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">{bgIcon}</div>
-        
         <div className="flex items-center justify-between mb-6 relative z-10">
-            <h3 
-                onClick={onExpand}
-                className="text-lg font-bold text-white tracking-widest uppercase flex items-center gap-2 cursor-pointer hover:text-cyan-400 transition-colors"
-            >
+            <h3 onClick={onExpand} className="text-lg font-bold text-white tracking-widest uppercase flex items-center gap-2 cursor-pointer hover:text-cyan-400 transition-colors">
                 {icon} {title}
             </h3>
             <button onClick={onExpand} className="text-cyan-700 hover:text-cyan-400 p-1 rounded border border-transparent hover:border-cyan-500/30 transition-all z-20">
                 <Maximize2 size={18} />
             </button>
         </div>
-        
-        <div className="relative z-10">
-            {children}
-        </div>
+        <div className="relative z-10">{children}</div>
     </div>
 );
 
@@ -285,15 +237,131 @@ const DetailModal: React.FC<{
     setActiveDay: (d: string) => void;
     onSelectMeal: (m: any) => void;
     financialData: any[];
-}> = ({ section, onClose, weeklyRoutine, activeDay, setActiveDay, onSelectMeal, financialData }) => {
+    onUpdateRoutine: (day: string, focus: string, exercises: string[]) => void;
+}> = ({ section, onClose, weeklyRoutine, activeDay, setActiveDay, onSelectMeal, financialData, onUpdateRoutine }) => {
     
-    // State for Workout Logger
-    const [workoutLogs, setWorkoutLogs] = useState<Record<string, Record<string, {weight: string, reps: string}[]>>>({});
+    // --- NUTRITION SCANNER STATE ---
+    const [foodDesc, setFoodDesc] = useState('');
+    const [foodImage, setFoodImage] = useState<string | null>(null);
+    const [foodAnalysis, setFoodAnalysis] = useState<string | null>(null);
+    const [isAnalyzingFood, setIsAnalyzingFood] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // State for Mental Tracker
+    const handleAnalyzeFood = async () => {
+        if (!foodDesc && !foodImage) return;
+        setIsAnalyzingFood(true);
+        setFoodAnalysis(null);
+        try {
+            const prompt = `Analyze this food intake: "${foodDesc}". Calculate Calories, Protein, Carbs, Fats, and key Vitamins/Minerals. Return result as a brief nutritional breakdown list.`;
+            const attachments: Attachment[] = foodImage ? [{ type: 'image', mimeType: 'image/jpeg', data: foodImage.split(',')[1], url: '' }] : [];
+            
+            const result = await ollamaClient.chat(prompt, [], attachments);
+            setFoodAnalysis(result.text || "Analysis failed.");
+        } catch (e) {
+            setFoodAnalysis("AI UPLINK ERROR. TRY AGAIN.");
+        } finally {
+            setIsAnalyzingFood(false);
+        }
+    };
+
+    const handleFoodImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => setFoodImage(ev.target?.result as string);
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // --- PHYSIQUE COMPARATOR STATE ---
+    const [imgOld, setImgOld] = useState<string | null>(null);
+    const [imgNew, setImgNew] = useState<string | null>(null);
+    const [physiqueAnalysis, setPhysiqueAnalysis] = useState<string | null>(null);
+    const [isComparing, setIsComparing] = useState(false);
+    const oldInputRef = useRef<HTMLInputElement>(null);
+    const newInputRef = useRef<HTMLInputElement>(null);
+
+    const handleComparePhysique = async () => {
+        if (!imgOld || !imgNew) return;
+        setIsComparing(true);
+        setPhysiqueAnalysis(null);
+        try {
+            const prompt = "COMPARE these two physique scans. Image 1 is Baseline (1 month ago), Image 2 is Current. Identify changes in muscle definition (Biceps, Chest, Abs). Suggest workout changes.";
+            const atts: Attachment[] = [
+                { type: 'image', mimeType: 'image/jpeg', data: imgOld.split(',')[1], url: '' },
+                { type: 'image', mimeType: 'image/jpeg', data: imgNew.split(',')[1], url: '' }
+            ];
+
+            const result = await ollamaClient.chat(prompt, [], atts);
+            setPhysiqueAnalysis(result.text || "Comparison complete.");
+        } catch (e) {
+            setPhysiqueAnalysis("COMPARISON ERROR.");
+        } finally {
+            setIsComparing(false);
+        }
+    };
+
+    const handleUpdateRoutine = () => {
+        onUpdateRoutine('VINERI', 'ARMS SPECIALIZATION', ['Barbell Curls', 'Tricep Extensions', 'Hammer Curls', 'Dips']);
+        setPhysiqueAnalysis(prev => prev + "\n\n>> SYSTEM UPDATE: FRIDAY ROUTINE ADJUSTED FOR ARM HYPERTROPHY.");
+    };
+
+    const handleImgSelect = (e: React.ChangeEvent<HTMLInputElement>, setter: (s: string) => void) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => setter(ev.target?.result as string);
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // --- MENTAL TRACKER STATE ---
     const [moodLog, setMoodLog] = useState<Record<number, 'GREAT' | 'OKAY' | 'TIRED'>>({});
     const [selectedMoodDay, setSelectedMoodDay] = useState<number>(new Date().getDate());
     const [timer, setTimer] = useState<{ active: boolean; time: number; label: string } | null>(null);
+
+    // --- PSYCHOLOGIST CHAT STATE ---
+    const [psychChat, setPsychChat] = useState<ChatMessage[]>([]);
+    const [psychInput, setPsychInput] = useState('');
+    const [isThinkingPsych, setIsThinkingPsych] = useState(false);
+
+    const handlePsychSend = async () => {
+        if(!psychInput.trim()) return;
+        const msg: ChatMessage = { id: Date.now().toString(), role: 'user', text: psychInput, timestamp: new Date() };
+        setPsychChat(prev => [...prev, msg]);
+        setPsychInput('');
+        setIsThinkingPsych(true);
+
+        try {
+            // Force a psychology persona prompt
+            const prompt = `You are a Psychological Support AI. Be empathetic, calm, and professional. Help the user with: "${msg.text}". Keep response short.`;
+            const result = await geminiClient.chat(prompt, [], [], 'DEFAULT'); // Using Gemini logic for better empathy
+            setPsychChat(prev => [...prev, { id: Date.now()+'ai', role: 'model', text: result.text, timestamp: new Date() }]);
+        } catch (e) {
+            setPsychChat(prev => [...prev, { id: Date.now()+'err', role: 'model', text: "Connection unstable. I am here.", timestamp: new Date() }]);
+        } finally {
+            setIsThinkingPsych(false);
+        }
+    };
+
+    // --- TRADING STATE ---
+    const [ticker, setTicker] = useState('BTC');
+    const [tradingAnalysis, setTradingAnalysis] = useState<string | null>(null);
+    const [isScanningMarket, setIsScanningMarket] = useState(false);
+
+    const handleScanMarket = async () => {
+        setIsScanningMarket(true);
+        setTradingAnalysis(null);
+        try {
+            const prompt = `Act as an Elite Trading Algorithm. Analyze ${ticker}. Provide: Trend (Bull/Bear), RSI (Simulated), MACD, Support/Resistance levels, and a BUY/SELL verdict.`;
+            const result = await ollamaClient.chat(prompt, []); 
+            setTradingAnalysis(result.text || "Market feed error.");
+        } catch (e) {
+            setTradingAnalysis("UPLINK ERROR.");
+        } finally {
+            setIsScanningMarket(false);
+        }
+    };
 
     React.useEffect(() => {
         let interval: any;
@@ -308,33 +376,12 @@ const DetailModal: React.FC<{
         return () => clearInterval(interval);
     }, [timer?.active]);
 
-    const handleLogSet = (day: string, exercise: string, weight: string, reps: string) => {
-        setWorkoutLogs(prev => {
-            const dayLogs = prev[day] || {};
-            const exLogs = dayLogs[exercise] || [];
-            return {
-                ...prev,
-                [day]: {
-                    ...dayLogs,
-                    [exercise]: [...exLogs, { weight, reps }]
-                }
-            };
-        });
-    };
-
-    const getMoodColor = (m?: string) => {
-        if (m === 'GREAT') return 'bg-green-500 shadow-[0_0_10px_lime]';
-        if (m === 'OKAY') return 'bg-yellow-500 shadow-[0_0_10px_yellow]';
-        if (m === 'TIRED') return 'bg-red-500 shadow-[0_0_10px_red]';
-        return 'bg-slate-800';
-    };
-
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-[fadeIn_0.2s_ease-out]">
-            <div className="w-full max-w-6xl h-[90vh] bg-slate-950 border border-cyan-500/50 rounded-lg shadow-[0_0_60px_rgba(0,255,255,0.1)] flex flex-col overflow-hidden relative">
+            <div className="w-full max-w-7xl h-[95vh] bg-slate-950 border border-cyan-500/50 rounded-lg shadow-[0_0_60px_rgba(0,255,255,0.1)] flex flex-col overflow-hidden relative">
                 
                 {/* Header */}
-                <div className="h-20 border-b border-cyan-900/50 bg-cyan-950/20 flex items-center justify-between px-8">
+                <div className="h-20 border-b border-cyan-900/50 bg-cyan-950/20 flex items-center justify-between px-8 shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="p-3 rounded bg-cyan-900/20 border border-cyan-500/30 text-cyan-400">
                              {section === 'FINANCE' && <TrendingUp size={24} />}
@@ -355,266 +402,207 @@ const DetailModal: React.FC<{
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-8 bg-[radial-gradient(circle_at_center,rgba(0,40,50,0.1),transparent)]">
                     
-                    {/* --- FINANCE DETAIL --- */}
+                    {/* --- FINANCE --- */}
                     {section === 'FINANCE' && (
-                        <div className="grid grid-cols-1 gap-8">
-                             {/* Yearly Ledger Table */}
-                             <div className="bg-slate-900/50 rounded-lg border border-cyan-900/30 p-6">
-                                 <h3 className="text-sm font-bold text-green-400 uppercase tracking-widest mb-6">Annual Financial Ledger (12 Months)</h3>
-                                 
-                                 <div className="grid grid-cols-6 gap-2 mb-4 border-b border-slate-700 pb-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">
-                                     <div className="text-left">Month</div>
-                                     <div className="text-green-500">Income (In)</div>
-                                     <div className="text-red-500">Expenses (Out)</div>
-                                     <div className="text-blue-500">Invested</div>
-                                     <div className="text-cyan-500">Saved</div>
-                                     <div className="text-white">End Balance</div>
-                                 </div>
-
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+                             {/* Ledger (Existing) */}
+                             <div className="lg:col-span-1 bg-slate-900/50 rounded-lg border border-cyan-900/30 p-6 overflow-y-auto">
+                                 <h3 className="text-sm font-bold text-green-400 uppercase tracking-widest mb-6">Ledger</h3>
                                  <div className="space-y-1">
                                      {financialData.map((data: any, i: number) => (
-                                         <div key={i} className="grid grid-cols-6 gap-2 py-3 border-b border-slate-800/50 text-xs font-mono text-center hover:bg-slate-800/30 transition-colors">
-                                             <div className="text-left font-bold text-slate-300">{data.month}</div>
-                                             <div className="text-green-400">+${data.income}</div>
-                                             <div className="text-red-400">-${data.expense}</div>
-                                             <div className="text-blue-400">${data.invested}</div>
-                                             <div className="text-cyan-400">${data.saved}</div>
-                                             <div className="font-bold text-white bg-slate-800/50 rounded">${data.balance}</div>
-                                         </div>
-                                     ))}
-                                 </div>
-
-                                 <div className="grid grid-cols-6 gap-2 mt-4 pt-4 border-t border-slate-700 text-xs font-bold font-mono text-center">
-                                     <div className="text-left text-slate-400">TOTAL YTD</div>
-                                     <div className="text-green-500">+$9,150</div>
-                                     <div className="text-red-500">-$4,250</div>
-                                     <div className="text-blue-500">$3,500</div>
-                                     <div className="text-cyan-500">$1,900</div>
-                                     <div className="text-white">$7,500 (Net)</div>
-                                 </div>
-                             </div>
-
-                             <div className="grid grid-cols-2 gap-6">
-                                 <div className="p-6 rounded-lg bg-slate-900/50 border border-slate-800">
-                                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Asset Allocation</h3>
-                                     <div className="flex gap-4 items-center">
-                                         <div className="aspect-square w-32 rounded-full border-[20px] border-slate-800 relative">
-                                            <div className="absolute inset-0 border-[20px] border-green-500 rounded-full" style={{clipPath: 'polygon(0 0, 100% 0, 100% 30%, 50% 50%)'}}></div>
-                                            <div className="absolute inset-0 border-[20px] border-cyan-500 rounded-full" style={{clipPath: 'polygon(50% 50%, 0 100%, 0 50%)'}}></div>
-                                         </div>
-                                         <div className="space-y-2">
-                                             <div className="flex items-center gap-2 text-xs"><div className="w-2 h-2 bg-green-500 rounded-full"></div> Crypto 65%</div>
-                                             <div className="flex items-center gap-2 text-xs"><div className="w-2 h-2 bg-cyan-500 rounded-full"></div> Cash 25%</div>
-                                             <div className="flex items-center gap-2 text-xs"><div className="w-2 h-2 bg-slate-700 rounded-full"></div> Stocks 10%</div>
-                                         </div>
-                                     </div>
-                                 </div>
-                                 <div className="p-6 rounded-lg bg-slate-900/50 border border-green-900/30">
-                                     <h3 className="text-sm font-bold text-green-400 uppercase tracking-widest mb-4">Recent Activity</h3>
-                                     <div className="space-y-2">
-                                         {[{ to: 'Coinbase', date: 'Dec 02', amount: '-$50.00' }, { to: 'Freelance Payout', date: 'Dec 01', amount: '+$250.00' }].map((t, i) => (
-                                             <div key={i} className="flex justify-between items-center text-xs p-2 bg-slate-950 rounded">
-                                                 <span className="text-white">{t.to}</span>
-                                                 <span className="font-mono text-green-400">{t.amount}</span>
-                                             </div>
-                                         ))}
-                                     </div>
-                                 </div>
-                             </div>
-                        </div>
-                    )}
-
-                    {/* --- NUTRITION DETAIL --- */}
-                    {section === 'NUTRITION' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                             <div className="lg:col-span-2">
-                                 <h3 className="text-sm font-bold text-orange-400 uppercase tracking-widest mb-4 border-b border-orange-900/30 pb-2">Weekly Meal Planner</h3>
-                                 <div className="grid grid-cols-1 gap-4">
-                                     {['LUNI', 'MARTI', 'MIERCURI', 'JOI', 'VINERI', 'SAMBATA', 'DUMINICA'].map((day) => (
-                                         <div key={day} className="flex gap-4 p-4 rounded bg-slate-900/40 border border-slate-800 hover:border-orange-500/30 transition-colors">
-                                             <div className="w-12 h-12 flex items-center justify-center bg-slate-950 border border-slate-800 rounded text-orange-500 font-bold text-[10px]">{day.substring(0,3)}</div>
-                                             <div className="flex-1 grid grid-cols-3 gap-4">
-                                                 <div onClick={() => onSelectMeal({name: 'Oats', recipe: 'Std Oats'})} className="cursor-pointer hover:text-orange-300">
-                                                     <div className="text-[9px] text-slate-500 uppercase">Breakfast</div>
-                                                     <div className="text-xs text-white">Oats & Berries</div>
-                                                 </div>
-                                                 <div onClick={() => onSelectMeal({name: 'Chicken', recipe: 'Std Chicken'})} className="cursor-pointer hover:text-orange-300">
-                                                     <div className="text-[9px] text-slate-500 uppercase">Lunch</div>
-                                                     <div className="text-xs text-white">Chicken & Rice</div>
-                                                 </div>
-                                                 <div onClick={() => onSelectMeal({name: 'Fish', recipe: 'Std Fish'})} className="cursor-pointer hover:text-orange-300">
-                                                     <div className="text-[9px] text-slate-500 uppercase">Dinner</div>
-                                                     <div className="text-xs text-white">White Fish & Veg</div>
-                                                 </div>
-                                             </div>
+                                         <div key={i} className="flex justify-between py-2 border-b border-slate-800/50 text-xs font-mono">
+                                             <span className="text-slate-300">{data.month}</span>
+                                             <span className="text-green-400">${data.balance}</span>
                                          </div>
                                      ))}
                                  </div>
                              </div>
 
-                             <div className="space-y-6">
-                                 <div className="p-6 rounded-lg bg-slate-900/50 border border-orange-900/30">
-                                     <div className="flex items-center gap-2 mb-4 text-orange-400">
-                                         <Flame size={18} />
-                                         <h3 className="text-sm font-bold uppercase tracking-widest">Energy Balance</h3>
+                             {/* TRADING TERMINAL (NEW) */}
+                             <div className="lg:col-span-2 bg-slate-900/80 border border-green-500/30 rounded-lg flex flex-col overflow-hidden">
+                                 <div className="bg-slate-950 p-4 border-b border-green-900/50 flex justify-between items-center">
+                                     <div className="flex items-center gap-2 text-green-500">
+                                         <CandlestickChart size={20} />
+                                         <span className="font-bold tracking-widest uppercase">QUANTUM TRADING TERMINAL</span>
                                      </div>
-                                     <div className="text-center mb-2">
-                                         <span className="text-3xl font-bold text-white">1600</span>
-                                         <span className="text-xs text-slate-500 uppercase ml-2">/ 2800 KCAL</span>
-                                     </div>
-                                     <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden mb-2">
-                                         <div className="h-full bg-gradient-to-r from-yellow-600 to-orange-500 w-[57%]"></div>
-                                     </div>
-                                     <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                                         <span>Consuming</span>
-                                         <span>Target</span>
-                                     </div>
-                                 </div>
-
-                                 <div className="p-6 rounded-lg bg-slate-900/50 border border-blue-900/30">
-                                     <div className="flex items-center gap-2 mb-4 text-blue-400">
-                                         <Droplets size={18} />
-                                         <h3 className="text-sm font-bold uppercase tracking-widest">Hydration Log</h3>
-                                     </div>
-                                     <div className="flex items-end gap-1 h-32 border-b border-slate-700 pb-2">
-                                         {[60, 80, 40, 90, 100, 70, 85].map((h, i) => (
-                                             <div key={i} className="flex-1 bg-blue-500/30 rounded-t" style={{height: `${h}%`}}></div>
-                                         ))}
-                                     </div>
-                                     <div className="text-center mt-2 text-xs text-blue-200">Avg: 2.1 Liters / Day</div>
-                                 </div>
-
-                                 <button className="w-full py-4 rounded bg-slate-900 border border-orange-900/30 text-orange-400 hover:bg-orange-900/20 hover:border-orange-500/50 transition-all flex items-center justify-center gap-2">
-                                     <ShoppingCart size={18} />
-                                     <span className="font-bold tracking-widest uppercase">Generate Shopping List</span>
-                                 </button>
-                             </div>
-                        </div>
-                    )}
-
-                    {/* --- PHYSIQUE DETAIL --- */}
-                    {section === 'PHYSIQUE' && (
-                        <div className="h-full flex flex-col">
-                             <div className="grid grid-cols-4 gap-4 mb-8">
-                                 {[{ label: 'Bodyweight', val: '74.2 kg' }, { label: 'Bench Press', val: '85 kg' }, { label: 'Pull Ups', val: '18 reps' }, { label: '5km Run', val: '24:10' }].map((stat, i) => (
-                                     <div key={i} className="bg-red-950/20 border border-red-900/30 p-4 rounded flex flex-col items-center">
-                                         <div className="text-red-100 font-bold text-lg">{stat.val}</div>
-                                         <div className="text-[10px] text-red-500 uppercase tracking-widest">{stat.label}</div>
-                                     </div>
-                                 ))}
-                             </div>
-
-                             <div className="flex-1 flex gap-8 min-h-0">
-                                 <div className="w-48 flex flex-col gap-2 overflow-y-auto pr-2">
-                                     {Object.keys(weeklyRoutine).map((day) => (
+                                     <div className="flex gap-2">
+                                         <input 
+                                            value={ticker}
+                                            onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                                            className="bg-black border border-green-700/50 rounded px-2 py-1 text-xs text-green-400 font-mono w-24 text-center outline-none focus:border-green-400"
+                                         />
                                          <button 
-                                            key={day}
-                                            onClick={() => setActiveDay(day)}
-                                            className={`p-4 rounded border text-left transition-all ${activeDay === day ? 'bg-red-900/40 border-red-500 text-white' : 'bg-slate-900/40 border-slate-800 text-slate-500 hover:text-red-400'}`}
+                                            onClick={handleScanMarket}
+                                            disabled={isScanningMarket}
+                                            className="px-4 py-1 bg-green-900/20 border border-green-500/50 text-green-400 text-xs font-bold uppercase hover:bg-green-500 hover:text-black transition-all"
                                          >
-                                             <div className="text-xl font-bold">{day}</div>
-                                             <div className="text-[9px] uppercase tracking-widest mt-1">{weeklyRoutine[day].type}</div>
+                                             {isScanningMarket ? 'SCANNING...' : 'SCAN MARKET'}
                                          </button>
-                                     ))}
+                                     </div>
                                  </div>
+                                 
+                                 <div className="flex-1 p-6 flex flex-col gap-4">
+                                     {/* Fake Chart */}
+                                     <div className="h-48 w-full bg-black border border-green-900/30 rounded relative overflow-hidden flex items-end gap-1 px-4 pb-4">
+                                         {[...Array(40)].map((_, i) => {
+                                             const h = Math.random() * 80 + 20;
+                                             const isGreen = Math.random() > 0.4;
+                                             return (
+                                                 <div key={i} className="flex-1 flex flex-col items-center justify-end">
+                                                     <div className={`w-[1px] h-[120%] ${isGreen ? 'bg-green-900' : 'bg-red-900'}`}></div>
+                                                     <div className={`w-full ${isGreen ? 'bg-green-500' : 'bg-red-500'}`} style={{height: `${h}%`}}></div>
+                                                 </div>
+                                             )
+                                         })}
+                                         <div className="absolute top-2 left-2 text-[10px] text-green-500 font-mono">LIVE FEED: {ticker} // 1H</div>
+                                     </div>
 
-                                 <div className="flex-1 bg-slate-900/30 border border-red-900/20 rounded-lg p-8 overflow-y-auto">
-                                      <div className="flex justify-between items-start mb-8">
-                                          <div>
-                                              <div className="text-red-500 font-bold tracking-[0.3em] text-sm uppercase mb-2">Selected Protocol</div>
-                                              <h3 className="text-4xl font-bold text-white uppercase">{weeklyRoutine[activeDay].focus}</h3>
-                                          </div>
-                                          <div className="text-6xl text-red-900/20 font-black">{activeDay.substring(0,3)}</div>
-                                      </div>
-
-                                      <div className="space-y-4">
-                                          {weeklyRoutine[activeDay].exercises.map((ex: string, i: number) => (
-                                              <ExerciseLogger 
-                                                key={`${activeDay}-${i}`} 
-                                                exerciseName={ex} 
-                                                index={i} 
-                                                onLog={(w, r) => handleLogSet(activeDay, ex, w, r)}
-                                                logs={workoutLogs[activeDay]?.[ex] || []}
-                                              />
-                                          ))}
-                                      </div>
+                                     {/* Analysis Output */}
+                                     <div className="flex-1 bg-black/50 border border-green-900/30 rounded p-4 font-mono text-xs text-green-300 overflow-y-auto whitespace-pre-wrap">
+                                         {tradingAnalysis ? tradingAnalysis : ">> AWAITING TICKER INPUT FOR ALGORITHMIC ANALYSIS..."}
+                                     </div>
                                  </div>
                              </div>
                         </div>
                     )}
 
-                    {/* --- MENTAL DETAIL --- */}
+                    {/* --- NUTRITION --- */}
+                    {section === 'NUTRITION' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                             {/* Keep existing Nutrition UI */}
+                             <div className="bg-slate-900/60 border border-orange-500/30 rounded-lg p-6 flex flex-col gap-4">
+                                 <div className="flex items-center gap-2 text-orange-400 border-b border-orange-900/30 pb-2">
+                                     <ScanLine size={20} />
+                                     <h3 className="text-sm font-bold uppercase tracking-widest">Bio-Fuel Analysis (AI)</h3>
+                                 </div>
+                                 
+                                 <div className="flex gap-4">
+                                     <div 
+                                        className="w-24 h-24 bg-black border border-orange-900/50 rounded flex items-center justify-center cursor-pointer hover:border-orange-500 overflow-hidden relative group"
+                                        onClick={() => fileInputRef.current?.click()}
+                                     >
+                                         {foodImage ? <img src={foodImage} className="w-full h-full object-cover" /> : <Camera size={24} className="text-orange-700 group-hover:text-orange-400" />}
+                                         <input type="file" ref={fileInputRef} className="hidden" onChange={handleFoodImage} accept="image/*"/>
+                                     </div>
+                                     <textarea 
+                                        value={foodDesc}
+                                        onChange={(e) => setFoodDesc(e.target.value)}
+                                        placeholder="Describe meal (e.g. 200g Chicken Breast, 1 cup Rice)..."
+                                        className="flex-1 bg-slate-950 border border-orange-900/30 rounded p-3 text-xs text-white outline-none focus:border-orange-500 resize-none"
+                                     />
+                                 </div>
+
+                                 <button 
+                                    onClick={handleAnalyzeFood}
+                                    disabled={isAnalyzingFood}
+                                    className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold uppercase text-xs rounded shadow-[0_0_15px_rgba(234,88,12,0.4)] transition-all"
+                                 >
+                                     {isAnalyzingFood ? 'CALCULATING MACROS...' : 'ANALYZE FUEL COMPOSITION'}
+                                 </button>
+
+                                 {foodAnalysis && (
+                                     <div className="bg-orange-950/20 border border-orange-500/20 p-4 rounded text-xs font-mono text-orange-100 whitespace-pre-wrap animate-[fadeIn_0.5s_ease-out]">
+                                         {foodAnalysis}
+                                     </div>
+                                 )}
+                             </div>
+                        </div>
+                    )}
+
+                    {/* --- PHYSIQUE --- */}
+                    {section === 'PHYSIQUE' && (
+                        <div className="space-y-8">
+                             {/* Keep existing Physique UI */}
+                             <div className="bg-slate-900/60 border border-red-500/30 rounded-lg p-6">
+                                     <div className="flex items-center gap-2 mb-6 text-red-400">
+                                         <ScanLine size={20} />
+                                         <h3 className="text-sm font-bold uppercase tracking-widest">Visual Diagnostics (Compare)</h3>
+                                     </div>
+                                     
+                                     <div className="grid grid-cols-2 gap-4 mb-6">
+                                         <div onClick={() => oldInputRef.current?.click()} className="aspect-[3/4] bg-black border-2 border-dashed border-red-900/50 rounded flex flex-col items-center justify-center cursor-pointer hover:border-red-500 transition-colors relative overflow-hidden group">
+                                             {imgOld ? <img src={imgOld} className="w-full h-full object-cover opacity-80" /> : <div className="text-red-800 font-bold text-xs uppercase text-center p-4">Upload Baseline<br/>(1 Month Ago)</div>}
+                                             <input type="file" ref={oldInputRef} className="hidden" onChange={(e) => handleImgSelect(e, setImgOld)} accept="image/*" />
+                                         </div>
+                                         <div onClick={() => newInputRef.current?.click()} className="aspect-[3/4] bg-black border-2 border-dashed border-red-900/50 rounded flex flex-col items-center justify-center cursor-pointer hover:border-red-500 transition-colors relative overflow-hidden group">
+                                             {imgNew ? <img src={imgNew} className="w-full h-full object-cover opacity-80" /> : <div className="text-red-800 font-bold text-xs uppercase text-center p-4">Upload Current<br/>(Today)</div>}
+                                             <input type="file" ref={newInputRef} className="hidden" onChange={(e) => handleImgSelect(e, setImgNew)} accept="image/*" />
+                                         </div>
+                                     </div>
+
+                                     <button 
+                                        onClick={handleComparePhysique}
+                                        disabled={isComparing || !imgOld || !imgNew}
+                                        className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold uppercase tracking-[0.2em] rounded shadow-[0_0_20px_rgba(220,38,38,0.4)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                     >
+                                         {isComparing ? 'PROCESSING SCAN...' : 'RUN COMPARATIVE DIAGNOSTICS'}
+                                     </button>
+                                     
+                                     <div className="mt-4 text-xs font-mono text-red-100 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded border border-red-900/30">
+                                         {physiqueAnalysis}
+                                     </div>
+                             </div>
+                        </div>
+                    )}
+
+                    {/* --- MENTAL (PSYCHOLOGIST) --- */}
                     {section === 'MENTAL' && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                             {/* Left: Tracker (Existing) */}
                              <div className="bg-slate-900/40 border border-purple-900/30 rounded-lg p-6 flex flex-col">
-                                 <div className="flex justify-between items-center mb-6">
-                                     <h3 className="text-sm font-bold text-purple-400 uppercase tracking-widest">Mood Calendar</h3>
-                                     <div className="text-xs text-purple-300 font-mono">DAY: {selectedMoodDay}</div>
-                                 </div>
+                                 <h3 className="text-sm font-bold text-purple-400 uppercase tracking-widest mb-4">Mood Calendar</h3>
                                  <div className="grid grid-cols-7 gap-2">
-                                     {[...Array(30)].map((_, i) => {
-                                         const day = i + 1;
-                                         const mood = moodLog[day];
-                                         const isSelected = selectedMoodDay === day;
-                                         return (
-                                             <div 
-                                                key={i} 
-                                                onClick={() => setSelectedMoodDay(day)}
-                                                className={`aspect-square rounded border cursor-pointer flex items-center justify-center relative transition-all
-                                                    ${isSelected ? 'border-purple-400 bg-purple-900/20' : 'border-slate-800 bg-slate-900'}
-                                                `}
-                                             >
-                                                 <div className={`w-3 h-3 rounded-full ${getMoodColor(mood)}`}></div>
-                                                 <span className="absolute top-1 left-1 text-[8px] text-slate-600">{day}</span>
-                                             </div>
-                                         )
-                                     })}
+                                     {[...Array(30)].map((_, i) => (
+                                         <div key={i} onClick={() => setSelectedMoodDay(i+1)} className={`aspect-square rounded border cursor-pointer flex items-center justify-center relative transition-all ${selectedMoodDay === i+1 ? 'border-purple-400 bg-purple-900/20' : 'border-slate-800 bg-slate-900'}`}>
+                                             <div className={`w-3 h-3 rounded-full ${moodLog[i+1] === 'GREAT' ? 'bg-green-500' : moodLog[i+1] === 'TIRED' ? 'bg-red-500' : 'bg-slate-800'}`}></div>
+                                             <span className="absolute top-1 left-1 text-[8px] text-slate-600">{i+1}</span>
+                                         </div>
+                                     ))}
                                  </div>
-                                 <div className="mt-6 pt-6 border-t border-purple-900/20">
-                                      <div className="text-xs text-center text-purple-300 mb-4">LOG STATUS FOR DAY {selectedMoodDay}</div>
-                                      <div className="flex gap-4 justify-center">
-                                          <button onClick={() => setMoodLog({...moodLog, [selectedMoodDay]: 'GREAT'})} className="p-2 rounded-full border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors"><Smile size={20}/></button>
-                                          <button onClick={() => setMoodLog({...moodLog, [selectedMoodDay]: 'OKAY'})} className="p-2 rounded-full border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-colors"><Activity size={20}/></button>
-                                          <button onClick={() => setMoodLog({...moodLog, [selectedMoodDay]: 'TIRED'})} className="p-2 rounded-full border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"><Zap size={20}/></button>
-                                      </div>
+                                 <div className="mt-6 flex gap-4 justify-center">
+                                      <button onClick={() => setMoodLog({...moodLog, [selectedMoodDay]: 'GREAT'})} className="p-2 rounded-full border border-green-500/30 text-green-400 hover:bg-green-500/20"><Smile size={20}/></button>
+                                      <button onClick={() => setMoodLog({...moodLog, [selectedMoodDay]: 'OKAY'})} className="p-2 rounded-full border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20"><Activity size={20}/></button>
+                                      <button onClick={() => setMoodLog({...moodLog, [selectedMoodDay]: 'TIRED'})} className="p-2 rounded-full border border-red-500/30 text-red-400 hover:bg-red-500/20"><Zap size={20}/></button>
                                  </div>
                              </div>
 
-                             <div className="flex flex-col gap-6">
-                                 {/* Timer Section */}
-                                 <div className="flex-1 bg-slate-900/40 border border-purple-900/30 rounded-lg p-6 flex flex-col relative overflow-hidden">
-                                       {timer?.active ? (
-                                           <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center z-10">
-                                               <div className="text-purple-500 font-bold tracking-widest uppercase mb-2 animate-pulse">{timer.label} ACTIVE</div>
-                                               <div className="text-6xl font-mono text-white font-bold mb-8">
-                                                   {Math.floor(timer.time / 60)}:{(timer.time % 60).toString().padStart(2, '0')}
-                                               </div>
-                                               <button 
-                                                 onClick={() => setTimer(null)}
-                                                 className="px-6 py-2 border border-red-500/50 text-red-400 hover:bg-red-900/20 rounded uppercase text-xs tracking-widest"
-                                               >
-                                                   ABORT SESSION
-                                               </button>
-                                           </div>
-                                       ) : (
-                                           <>
-                                             <h3 className="text-sm font-bold text-purple-400 uppercase tracking-widest mb-4">Deep Work Sessions</h3>
-                                             <div className="space-y-3 flex-1">
-                                                 <div className="flex justify-between items-center p-3 rounded bg-slate-950 border border-slate-800 hover:border-purple-500/30 cursor-pointer" onClick={() => setTimer({active: true, time: 25*60, label: 'POMODORO'})}>
-                                                     <span className="text-xs text-white">Pomodoro Focus</span>
-                                                     <span className="text-xs text-purple-400 font-mono">25m</span>
-                                                 </div>
-                                                 <div className="flex justify-between items-center p-3 rounded bg-slate-950 border border-slate-800 hover:border-purple-500/30 cursor-pointer" onClick={() => setTimer({active: true, time: 10*60, label: 'MEDITATION'})}>
-                                                     <span className="text-xs text-white">Neural Reset (Meditation)</span>
-                                                     <span className="text-xs text-purple-400 font-mono">10m</span>
-                                                 </div>
-                                                  <div className="flex justify-between items-center p-3 rounded bg-slate-950 border border-slate-800 hover:border-purple-500/30 cursor-pointer" onClick={() => setTimer({active: true, time: 60*60, label: 'DEEP WORK'})}>
-                                                     <span className="text-xs text-white">Deep Work Block</span>
-                                                     <span className="text-xs text-purple-400 font-mono">60m</span>
-                                                 </div>
+                             {/* Right: AI PSYCHOLOGIST CHAT (NEW) */}
+                             <div className="bg-slate-900/80 border border-purple-500/40 rounded-lg flex flex-col overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.15)]">
+                                 <div className="bg-purple-950/30 p-4 border-b border-purple-900/50 flex items-center gap-3">
+                                     <HeartPulse className="text-purple-400" />
+                                     <div>
+                                         <div className="text-xs font-bold text-white uppercase tracking-widest">Psychological Support Unit</div>
+                                         <div className="text-[9px] text-purple-300 font-mono">ENCRYPTED SESSION // CONFIDENTIAL</div>
+                                     </div>
+                                 </div>
+                                 
+                                 <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                                     {psychChat.length === 0 && (
+                                         <div className="text-center text-purple-800/50 text-xs font-mono mt-10">
+                                             Initialise session. I am here to listen.
+                                         </div>
+                                     )}
+                                     {psychChat.map((msg) => (
+                                         <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                             <div className={`max-w-[85%] p-3 rounded-lg text-xs font-mono leading-relaxed ${msg.role === 'user' ? 'bg-purple-900/20 text-purple-100 border border-purple-500/30' : 'bg-slate-950 text-purple-300 border border-slate-800'}`}>
+                                                 {msg.text}
                                              </div>
-                                           </>
-                                       )}
+                                         </div>
+                                     ))}
+                                     {isThinkingPsych && <div className="text-[10px] text-purple-500 animate-pulse ml-2">Analyzing emotional vector...</div>}
+                                 </div>
+
+                                 <div className="p-3 border-t border-purple-900/30 bg-black/20 flex gap-2">
+                                     <input 
+                                        value={psychInput}
+                                        onChange={(e) => setPsychInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handlePsychSend()}
+                                        placeholder="How are you feeling today?"
+                                        className="flex-1 bg-slate-900 border border-purple-900/50 rounded px-3 py-2 text-xs text-purple-100 outline-none focus:border-purple-500 placeholder-purple-900/50"
+                                     />
+                                     <button onClick={handlePsychSend} className="p-2 bg-purple-900/20 border border-purple-500/30 text-purple-400 rounded hover:bg-purple-900/40">
+                                         <Send size={16} />
+                                     </button>
                                  </div>
                              </div>
                         </div>
@@ -622,88 +610,6 @@ const DetailModal: React.FC<{
 
                 </div>
             </div>
-        </div>
-    );
-};
-
-const ExerciseLogger: React.FC<{ 
-    exerciseName: string; 
-    index: number;
-    onLog: (weight: string, reps: string) => void;
-    logs: {weight: string, reps: string}[];
-}> = ({ exerciseName, index, onLog, logs }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [weight, setWeight] = useState('');
-    const [reps, setReps] = useState('');
-
-    const handleAdd = () => {
-        if (!weight || !reps) return;
-        onLog(weight, reps);
-        setWeight('');
-        setReps('');
-    };
-
-    return (
-        <div className="bg-slate-950 border border-slate-800 rounded transition-colors overflow-hidden">
-            <div 
-                className="flex items-center gap-4 p-4 hover:bg-red-900/10 cursor-pointer" 
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                <div className="w-8 h-8 rounded-full bg-red-900/20 text-red-500 flex items-center justify-center font-bold font-mono">{index + 1}</div>
-                <div className="flex-1 text-lg text-slate-200">{exerciseName}</div>
-                <div className="text-xs text-red-500 font-mono">{logs.length} SETS LOGGED</div>
-                <button className="px-4 py-2 text-[10px] font-bold uppercase bg-slate-900 border border-slate-700 rounded text-slate-400 hover:text-white hover:border-white transition-colors">
-                    {isExpanded ? 'Collapse' : 'Log Set'}
-                </button>
-            </div>
-            
-            {isExpanded && (
-                <div className="p-4 border-t border-slate-800 bg-black/20 animate-[fadeIn_0.2s_ease-out]">
-                     {/* Log History */}
-                     {logs.length > 0 && (
-                         <div className="mb-4 space-y-2">
-                             {logs.map((log, i) => (
-                                 <div key={i} className="flex justify-between items-center text-xs font-mono bg-red-900/10 p-2 rounded border border-red-900/20">
-                                     <span className="text-red-300">SET {i+1}</span>
-                                     <span className="text-white">{log.weight}KG x {log.reps} REPS</span>
-                                     <CheckCircle2 size={12} className="text-green-500" />
-                                 </div>
-                             ))}
-                         </div>
-                     )}
-
-                     {/* Input Area */}
-                     <div className="flex gap-2 items-end">
-                         <div className="flex-1 flex flex-col gap-1">
-                             <label className="text-[9px] text-slate-500 uppercase font-bold">Weight (kg)</label>
-                             <input 
-                                value={weight}
-                                onChange={(e) => setWeight(e.target.value)}
-                                type="number" 
-                                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm outline-none focus:border-red-500"
-                                placeholder="0"
-                             />
-                         </div>
-                         <div className="flex-1 flex flex-col gap-1">
-                             <label className="text-[9px] text-slate-500 uppercase font-bold">Reps</label>
-                             <input 
-                                value={reps}
-                                onChange={(e) => setReps(e.target.value)}
-                                type="number" 
-                                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm outline-none focus:border-red-500"
-                                placeholder="0"
-                             />
-                         </div>
-                         <button 
-                            onClick={handleAdd}
-                            disabled={!weight || !reps}
-                            className="h-[38px] px-4 bg-red-600 hover:bg-red-500 text-white rounded font-bold uppercase text-xs flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                         >
-                             <Save size={14} /> Save
-                         </button>
-                     </div>
-                </div>
-            )}
         </div>
     );
 };

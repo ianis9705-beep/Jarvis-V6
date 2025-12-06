@@ -20,7 +20,17 @@ export const ollamaClient = {
 
   chat: async (prompt: string, history: ChatMessage[], attachments: Attachment[] = []) => {
     try {
-      const activeModel = getActiveModel();
+      let activeModel = getActiveModel();
+
+      const currentImages = attachments
+        .filter(a => a.type === 'image' && a.data)
+        .map(a => a.data!);
+
+      // Auto-switch to vision model if images are present
+      if (currentImages.length > 0 && !activeModel.includes('llava')) {
+          console.log("Switching to LLaVA for vision task");
+          activeModel = 'llava'; 
+      }
 
       // Convert history to Ollama format
       const messages = history.map(msg => ({
@@ -29,9 +39,6 @@ export const ollamaClient = {
         images: msg.attachments?.filter(a => a.type === 'image' && a.data).map(a => a.data!) 
       }));
       
-      const currentImages = attachments.filter(a => a.type === 'image' && a.data).map(a => a.data!);
-      const targetModel = currentImages.length > 0 ? 'llava' : activeModel;
-
       // CRITICAL THINKING & SYSTEM CONTROL PROMPT
       const systemContext = `
       YOU ARE J.A.R.V.I.S.
@@ -43,7 +50,9 @@ export const ollamaClient = {
          - To add a task, output: [CMD:TASK|Task Name]
          - To open a website, output: [CMD:OPEN|url]
          - To navigate, output: [CMD:NAVIGATE|page name]
-      3. LEARNING: Learn from the user's projects.
+      3. VISION & TRANSLATION: If an image is provided:
+         - If text is detected in English/French/Other, TRANSLATE IT TO ROMANIAN.
+         - Describe the screen content in Romanian.
       `;
 
       messages.push({ role: 'system', content: systemContext } as any);
@@ -58,7 +67,7 @@ export const ollamaClient = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: targetModel,
+          model: activeModel,
           messages: messages,
           stream: false 
         })
@@ -83,8 +92,6 @@ export const ollamaClient = {
   generateImage: async (prompt: string, config: GenerationConfig) => {
       let model = getActiveModel();
       if (model.includes('llama3') || model.includes('mistral')) model = 'codellama'; 
-
-      model = getActiveModel(); 
       
       let systemPrompt = "You are a Vector Graphics Generator. You DO NOT write descriptions. You ONLY write raw SVG XML code.";
       let userPrompt = `Generate an SVG code for: ${prompt}.`;

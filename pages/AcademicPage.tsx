@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { BookOpen, User, GraduationCap, Mic, FileText, BrainCircuit, Library, PenTool, X, Save, Plus, ChevronRight, ChevronDown, Folder, File, AlertTriangle, Shield, Database, Link2 } from 'lucide-react';
+import { BookOpen, User, GraduationCap, Mic, FileText, BrainCircuit, Library, PenTool, X, Save, Plus, ChevronRight, ChevronDown, Folder, File, AlertTriangle, Shield, Database, Link2, Languages, Volume2 } from 'lucide-react';
 import { Drawboard } from '../components/Drawboard';
 
 interface Subject {
@@ -8,25 +8,26 @@ interface Subject {
   name: string;
   teacher: string;
   icon: React.ReactNode;
+  type?: 'science' | 'humanities' | 'language' | 'art';
 }
 
 const SUBJECTS: Subject[] = [
-  { id: 'math', name: 'MATHEMATICS', teacher: 'Severin Cristinel', icon: <div className="font-mono font-bold">∑</div> },
-  { id: 'info', name: 'INFORMATICS', teacher: 'Severin Cristinel', icon: <div className="font-mono font-bold">{`</>`}</div> },
-  { id: 'homeroom', name: 'DIRIGENTIE', teacher: 'Severin Cristinel', icon: <User size={20} /> },
-  { id: 'english', name: 'ENGLISH', teacher: 'George Chiorcea', icon: <div className="font-serif font-bold">En</div> },
-  { id: 'chemistry', name: 'CHEMISTRY', teacher: 'Lazar', icon: <div className="font-mono font-bold">H₂O</div> },
-  { id: 'physics', name: 'PHYSICS', teacher: 'Lazar', icon: <div className="font-mono font-bold">E=mc²</div> },
-  { id: 'romanian', name: 'ROMANIAN LIT.', teacher: 'Milea', icon: <BookOpen size={20} /> },
-  { id: 'biology', name: 'BIOLOGY', teacher: 'Stratulat', icon: <div className="font-mono font-bold">DNA</div> },
-  { id: 'french', name: 'FRENCH', teacher: 'Pasat', icon: <div className="font-serif font-bold">Fr</div> },
-  { id: 'geography', name: 'GEOGRAPHY', teacher: 'Trandafir', icon: <div className="font-mono font-bold">GEO</div> },
-  { id: 'history', name: 'HISTORY', teacher: 'Lungu', icon: <Library size={20} /> },
-  { id: 'music', name: 'MUSIC', teacher: 'Cristian', icon: <div className="font-mono font-bold">♫</div> },
-  { id: 'art', name: 'ART / DRAWING', teacher: 'Magdalin', icon: <PenTool size={20} /> },
-  { id: 'tech', name: 'TECH ED', teacher: 'Neagu', icon: <div className="font-mono font-bold">⚙</div> },
-  { id: 'religion', name: 'RELIGION', teacher: 'Chiriac', icon: <div className="font-mono font-bold">†</div> },
-  { id: 'sport', name: 'P.E. / SPORT', teacher: 'Stoian', icon: <div className="font-mono font-bold">Run</div> },
+  { id: 'math', name: 'MATHEMATICS', teacher: 'Severin Cristinel', icon: <div className="font-mono font-bold">∑</div>, type: 'science' },
+  { id: 'info', name: 'INFORMATICS', teacher: 'Severin Cristinel', icon: <div className="font-mono font-bold">{`</>`}</div>, type: 'science' },
+  { id: 'homeroom', name: 'DIRIGENTIE', teacher: 'Severin Cristinel', icon: <User size={20} />, type: 'humanities' },
+  { id: 'english', name: 'ENGLISH', teacher: 'George Chiorcea', icon: <div className="font-serif font-bold">En</div>, type: 'language' },
+  { id: 'chemistry', name: 'CHEMISTRY', teacher: 'Lazar', icon: <div className="font-mono font-bold">H₂O</div>, type: 'science' },
+  { id: 'physics', name: 'PHYSICS', teacher: 'Lazar', icon: <div className="font-mono font-bold">E=mc²</div>, type: 'science' },
+  { id: 'romanian', name: 'ROMANIAN LIT.', teacher: 'Milea', icon: <BookOpen size={20} />, type: 'language' },
+  { id: 'biology', name: 'BIOLOGY', teacher: 'Stratulat', icon: <div className="font-mono font-bold">DNA</div>, type: 'science' },
+  { id: 'french', name: 'FRENCH', teacher: 'Pasat', icon: <div className="font-serif font-bold">Fr</div>, type: 'language' },
+  { id: 'geography', name: 'GEOGRAPHY', teacher: 'Trandafir', icon: <div className="font-mono font-bold">GEO</div>, type: 'humanities' },
+  { id: 'history', name: 'HISTORY', teacher: 'Lungu', icon: <Library size={20} />, type: 'humanities' },
+  { id: 'music', name: 'MUSIC', teacher: 'Cristian', icon: <div className="font-mono font-bold">♫</div>, type: 'art' },
+  { id: 'art', name: 'ART / DRAWING', teacher: 'Magdalin', icon: <PenTool size={20} />, type: 'art' },
+  { id: 'tech', name: 'TECH ED', teacher: 'Neagu', icon: <div className="font-mono font-bold">⚙</div>, type: 'science' },
+  { id: 'religion', name: 'RELIGION', teacher: 'Chiriac', icon: <div className="font-mono font-bold">†</div>, type: 'humanities' },
+  { id: 'sport', name: 'P.E. / SPORT', teacher: 'Stoian', icon: <div className="font-mono font-bold">Run</div>, type: 'art' },
 ];
 
 interface AcademicPageProps {
@@ -40,7 +41,7 @@ export const AcademicPage: React.FC<AcademicPageProps> = ({ targetSubjectId }) =
       if (targetSubjectId) {
           if (targetSubjectId === 'drawboard') {
               // Open a generic subject for drawboard
-               setSelectedSubject({ id: 'drawboard', name: 'GENERAL WORKSPACE', teacher: 'AI ASSISTED', icon: <PenTool /> });
+               setSelectedSubject({ id: 'drawboard', name: 'GENERAL WORKSPACE', teacher: 'AI ASSISTED', icon: <PenTool />, type: 'art' });
           } else {
               const sub = SUBJECTS.find(s => s.id === targetSubjectId || s.name.toLowerCase().includes(targetSubjectId.toLowerCase()));
               if (sub) setSelectedSubject(sub);
@@ -109,7 +110,7 @@ interface ModalProps {
     initialTab?: ToolTab;
 }
 
-type ToolTab = 'ianis_notes' | 'difficulties' | 'jarvis_synthesis' | 'class_notebook' | 'omni_notebook' | 'live_lesson' | 'test' | 'drawboard';
+type ToolTab = 'ianis_notes' | 'difficulties' | 'jarvis_synthesis' | 'class_notebook' | 'omni_notebook' | 'live_lesson' | 'test' | 'drawboard' | 'pronunciation';
 
 const SubjectModal: React.FC<ModalProps> = ({ subject, onClose, initialTab }) => {
     // Structural State
@@ -155,9 +156,10 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose, initialTab }) =>
         return `${mod?.title.split(':')[0]} / ${less?.title}`;
     };
 
-    const TOOLS: { id: ToolTab; label: string; icon: React.ReactNode }[] = [
+    const TOOLS: { id: ToolTab; label: string; icon: React.ReactNode; hidden?: boolean }[] = [
         { id: 'ianis_notes', label: 'NOTES', icon: <FileText size={14} /> },
         { id: 'difficulties', label: 'DIFFICULTIES', icon: <AlertTriangle size={14} /> },
+        { id: 'pronunciation', label: 'PRONUNCIATION', icon: <Languages size={14} />, hidden: subject.type !== 'language' },
         { id: 'drawboard', label: 'DRAWBOARD', icon: <PenTool size={14} /> },
         { id: 'jarvis_synthesis', label: 'AI SYNTHESIS', icon: <BrainCircuit size={14} /> },
         { id: 'class_notebook', label: 'NOTEBOOK', icon: <BookOpen size={14} /> },
@@ -241,7 +243,7 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose, initialTab }) =>
                     ) : (
                         <>
                             <div className="h-14 border-b border-cyan-900/50 bg-slate-900/50 flex items-center px-4 gap-1 overflow-x-auto scrollbar-hide">
-                                {TOOLS.map(tool => (
+                                {TOOLS.filter(t => !t.hidden).map(tool => (
                                     <button
                                         key={tool.id}
                                         onClick={() => setActiveTab(tool.id)}
@@ -262,6 +264,8 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose, initialTab }) =>
                                 <div className="flex-1 min-h-0 relative rounded-lg overflow-hidden border border-cyan-900/20">
                                     {activeTab === 'drawboard' ? (
                                         <Drawboard />
+                                    ) : activeTab === 'pronunciation' ? (
+                                        <PronunciationCoach language={subject.id === 'french' ? 'FR' : 'EN'} />
                                     ) : (
                                         <textarea className="w-full h-full bg-slate-900/30 p-4 text-cyan-100 font-mono text-sm resize-none outline-none focus:border-cyan-500" placeholder="// Entry system active..."></textarea>
                                     )}
@@ -270,6 +274,58 @@ const SubjectModal: React.FC<ModalProps> = ({ subject, onClose, initialTab }) =>
                         </>
                     )}
                 </div>
+            </div>
+        </div>
+    );
+};
+
+// --- PRONUNCIATION COACH COMPONENT ---
+const PronunciationCoach: React.FC<{ language: 'EN' | 'FR' }> = ({ language }) => {
+    const [textToRead, setTextToRead] = useState(language === 'FR' ? "Bonjour, je m'appelle Ianis." : "Hello, my name is Ianis.");
+    const [isRecording, setIsRecording] = useState(false);
+    const [feedback, setFeedback] = useState<string>('');
+
+    const toggleRecording = () => {
+        setIsRecording(!isRecording);
+        if (!isRecording) {
+            setFeedback('');
+        } else {
+            // SIMULATE AI FEEDBACK after recording stops
+            setFeedback("ANALYZING AUDIO...");
+            setTimeout(() => {
+                const score = Math.floor(Math.random() * 30) + 70; // Random score 70-100
+                setFeedback(`ACCURACY: ${score}%\n\nFEEDBACK:\n- Rhythm: Good.\n- Intonation: Needs slight adjustment on the last vowel.\n- Detected: Clear pronunciation of subject.`);
+            }, 2000);
+        }
+    };
+
+    return (
+        <div className="h-full bg-slate-900/30 p-8 flex flex-col items-center justify-center gap-8">
+            <div className="w-full max-w-lg">
+                <label className="text-xs text-cyan-600 font-bold uppercase tracking-widest mb-2 block">Text to Pronounce ({language})</label>
+                <textarea 
+                    value={textToRead}
+                    onChange={(e) => setTextToRead(e.target.value)}
+                    className="w-full bg-slate-950 border border-cyan-900/50 rounded p-4 text-xl text-white font-serif text-center outline-none focus:border-cyan-500 resize-none h-32"
+                />
+            </div>
+
+            <div className="relative">
+                {isRecording && <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20"></div>}
+                <button 
+                    onClick={toggleRecording}
+                    className={`relative w-24 h-24 rounded-full border-4 flex items-center justify-center transition-all ${isRecording ? 'border-red-500 text-red-500 bg-red-950/30' : 'border-cyan-500 text-cyan-500 bg-cyan-950/30 hover:bg-cyan-900/50'}`}
+                >
+                    <Mic size={40} />
+                </button>
+            </div>
+            
+            <div className="h-32 w-full max-w-lg bg-slate-950 border border-cyan-900/30 rounded p-4 text-center">
+                {feedback ? (
+                    <div className="font-mono text-sm whitespace-pre-wrap text-cyan-300 animate-[fadeIn_0.5s_ease-out]">{feedback}</div>
+                ) : (
+                    <div className="text-cyan-800 text-xs font-mono uppercase mt-8">{isRecording ? "LISTENING..." : "PRESS MIC TO START RECORDING"}</div>
+                )}
             </div>
         </div>
     );
