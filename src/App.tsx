@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Power, Server, HardDrive, Menu, Lightbulb, MessageSquare, Cloud, Database, Eye } from 'lucide-react';
+import { Menu, Lightbulb, Cloud, Database, Eye } from 'lucide-react';
 import { useJarvisLive } from './hooks/useJarvisLive';
-import { ConnectionState, ChatMessage, GenerationConfig, Attachment, AIProvider, PageView, SystemMode, SystemCommand } from './types';
+import { ConnectionState, ChatMessage, GenerationConfig, Attachment, AIProvider, PageView, SystemMode } from './types';
 import { ArcReactor } from './components/ArcReactor';
 import { SystemWidget } from './components/SystemWidget';
 import { Waveform } from './components/Waveform';
@@ -104,75 +103,29 @@ const App: React.FC = () => {
       setRamUsed(prev => Math.min(ramTotal, Math.max(8, prev + (Math.random() - 0.5) * 0.2)));
     }, 1000);
 
-    // IDLE CHECKER (Proactivity)
-    const idleInterval = setInterval(() => {
-        if (Date.now() - lastInteractionRef.current > 60000 && !suggestion && bootComplete) {
-            const memory = MemoryService.getMemory();
-            const prompts = [
-                `Sir, systems are idle. Shall we review your ${memory.activeProjects[0]}?`,
-                "Resources available. Want to run a system diagnostic?",
-                "Reminder: You have a study goal pending.",
-                "Sir, I've detected a lull in activity. Perhaps a coffee break?",
-                "Scanning network... All sectors quiet."
-            ];
-            setSuggestion(prompts[Math.floor(Math.random() * prompts.length)]);
-        }
-    }, 10000);
-
     return () => {
       clearInterval(timeInterval);
       clearInterval(hwInterval);
-      clearInterval(idleInterval);
     };
-  }, [cpuLoad, gpuLoad, suggestion, bootComplete]);
-
-  // Merge Live messages & Check for Voice Navigation
-  useEffect(() => {
-     if (liveMessages.length > 0) {
-         lastInteractionRef.current = Date.now();
-         const lastMsg = liveMessages[liveMessages.length - 1];
-         
-         // Process Voice Commands for Navigation
-         if (lastMsg.role === 'user') {
-             processNavigationCommand(lastMsg.text || '');
-         }
-
-         setChatHistory(prev => {
-             const newMsgs = liveMessages.filter(lm => !prev.find(p => p.id === lm.id));
-             return [...prev, ...newMsgs];
-         });
-     }
-  }, [liveMessages]);
+  }, []);
 
   const processNavigationCommand = (text: string) => {
       const lower = text.toLowerCase();
+      if (lower.includes('go to home')) setCurrentPage('home');
+      else if (lower.includes('go to projects')) setCurrentPage('projects');
+      else if (lower.includes('go to academic')) setCurrentPage('academic');
+      else if (lower.includes('go to tools')) setCurrentPage('tools');
+      else if (lower.includes('go to files')) setCurrentPage('files');
+      else if (lower.includes('people')) setCurrentPage('people');
       
-      // Page Navigation
-      if (lower.includes('go to home') || lower.includes('dashboard')) setCurrentPage('home');
-      else if (lower.includes('go to projects') || lower.includes('open projects')) setCurrentPage('projects');
-      else if (lower.includes('go to academic') || lower.includes('school page')) setCurrentPage('academic');
-      else if (lower.includes('go to tools') || lower.includes('open tools')) setCurrentPage('tools');
-      else if (lower.includes('go to files') || lower.includes('open archives')) setCurrentPage('files');
-      else if (lower.includes('developer mode') || lower.includes('dev console')) setCurrentPage('developer');
-      else if (lower.includes('settings') || lower.includes('configuration')) setCurrentPage('settings');
-      else if (lower.includes('people') || lower.includes('contacts')) setCurrentPage('people');
-      
-      // Mode Switching
       if (lower.includes('school mode')) setSystemMode('SCHOOL');
       else if (lower.includes('work mode')) setSystemMode('WORK');
       else if (lower.includes('default mode')) setSystemMode('DEFAULT');
-
-      // Deep Linking
-      if (lower.includes('open biology')) { setCurrentPage('academic'); setTargetContext('biology'); }
-      else if (lower.includes('open math')) { setCurrentPage('academic'); setTargetContext('math'); }
-      else if (lower.includes('open drawboard') || lower.includes('drawboard')) { setCurrentPage('academic'); setTargetContext('drawboard'); }
   };
 
   const handleGesture = (direction: 'LEFT' | 'RIGHT') => {
-      // Simple Gesture Navigation
       const pages: PageView[] = ['home', 'academic', 'projects', 'improvement', 'files', 'tools', 'people', 'library', 'developer', 'settings'];
       const currentIdx = pages.indexOf(currentPage);
-      
       if (direction === 'LEFT') {
           const next = currentIdx < pages.length - 1 ? pages[currentIdx + 1] : pages[0];
           setCurrentPage(next);
@@ -183,55 +136,14 @@ const App: React.FC = () => {
   };
 
   const executeSystemCommands = (text: string) => {
-      // Regex to find commands like [CMD:TASK|Buy milk]
       const cmdRegex = /\[CMD:(TASK|OPEN|NAVIGATE|TIMER)\|([^\]]+)\]/g;
       let match;
       while ((match = cmdRegex.exec(text)) !== null) {
           const type = match[1];
           const payload = match[2];
-          
-          console.log(`EXECUTING COMMAND: ${type} -> ${payload}`);
-
-          if (type === 'TASK') {
-              addTask(payload);
-          } else if (type === 'OPEN') {
-              if (payload.includes('youtube')) window.open('https://youtube.com', '_blank');
-              else if (payload.includes('google')) window.open('https://google.com', '_blank');
-          } else if (type === 'NAVIGATE') {
-              if (payload === 'ACADEMIC_DRAWBOARD') {
-                  setCurrentPage('academic');
-                  setTargetContext('drawboard');
-              } else {
-                  processNavigationCommand(payload); 
-              }
-          }
-      }
-  };
-
-  const speakText = (text: string) => {
-      if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-          // Remove command tags before speaking
-          const cleanText = text.replace(/\[CMD:.*?\]/g, '').trim();
-          if (!cleanText) return;
-
-          const utterance = new SpeechSynthesisUtterance(cleanText);
-          const savedSpeed = localStorage.getItem('JARVIS_VOICE_SPEED');
-          const savedPitch = localStorage.getItem('JARVIS_VOICE_PITCH');
-          const savedVol = localStorage.getItem('JARVIS_VOLUME');
-          const savedVoiceURI = localStorage.getItem('JARVIS_SELECTED_VOICE_URI');
-
-          if (savedSpeed) utterance.rate = parseFloat(savedSpeed);
-          if (savedPitch) utterance.pitch = parseFloat(savedPitch);
-          if (savedVol) utterance.volume = parseFloat(savedVol);
-
-          if (savedVoiceURI) {
-              const voices = window.speechSynthesis.getVoices();
-              const voice = voices.find(v => v.voiceURI === savedVoiceURI);
-              if (voice) utterance.voice = voice;
-          }
-
-          window.speechSynthesis.speak(utterance);
+          if (type === 'TASK') addTask(payload);
+          else if (type === 'OPEN' && payload.includes('http')) window.open(payload, '_blank');
+          else if (type === 'NAVIGATE') processNavigationCommand(payload); 
       }
   };
 
@@ -260,55 +172,19 @@ const App: React.FC = () => {
             text: ''
         };
 
-        const isGeneration = text.toLowerCase().includes('generate') || text.toLowerCase().includes('imagine') || text.toLowerCase().includes('draw') || text.toLowerCase().includes('create image');
-        
-        // --- LOCAL OLLAMA PATH ---
-        if (provider === 'ollama') {
-            if (isGeneration) {
-                 const img = await ollamaClient.generateImage(text, genConfig);
-                 responseMsg.text = "Visual asset synthesized via Local Vector Engine.";
-                 responseMsg.attachments = [img];
-                 speakText("Visual asset synthesized.");
-            } else {
-                 const result = await ollamaClient.chat(text, chatHistory, attachments);
-                 responseMsg.text = result.text;
-                 executeSystemCommands(result.text); // Check for commands
-                 speakText(result.text);
-            }
-        } 
-        // --- CLOUD GEMINI PATH ---
-        else {
-            if (isGeneration) {
-                 const imgConfig: GenerationConfig = { ...genConfig, style: systemMode === 'SCHOOL' ? 'blueprint' : genConfig.style };
-                 if (genConfig.mode === 'video') {
-                    const video = await geminiClient.generateVideo(text, genConfig);
-                    responseMsg.text = "Video sequence rendered via Veo.";
-                    responseMsg.attachments = [video];
-                    speakText("Video sequence rendered.");
-                 } else {
-                    const img = await geminiClient.generateImage(text, imgConfig);
-                    responseMsg.text = "Visual asset generated.";
-                    responseMsg.attachments = [img];
-                    speakText("Visual asset generated.");
-                 }
-            } else {
-                 const result = await geminiClient.chat(text, chatHistory, attachments, systemMode);
-                 responseMsg.text = result.text;
-                 responseMsg.groundingUrls = result.groundingUrls;
-                 executeSystemCommands(result.text); // Check for commands
-                 speakText(result.text);
-            }
-        }
+        // Prefer Ollama for Local setup
+        const result = await ollamaClient.chat(text, chatHistory, attachments);
+        responseMsg.text = result.text;
+        executeSystemCommands(result.text || ''); 
         
         setChatHistory(prev => [...prev, responseMsg]);
     } catch (err: any) {
         setChatHistory(prev => [...prev, {
             id: Date.now().toString() + '_err',
             role: 'model',
-            text: `ERROR: ${err.message}. Check uplink status.`,
+            text: `SYSTEM ERROR: ${err.message}. Ensure Ollama is running.`,
             timestamp: new Date()
         }]);
-        speakText("Error encountered. Please check uplink status.");
     } finally {
         setIsProcessing(false);
     }
@@ -331,8 +207,7 @@ const App: React.FC = () => {
       {systemMode === 'WORK' && (
           <div className="fixed inset-0 z-0 opacity-20 pointer-events-none">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,black_90%)] z-10"></div>
-              {/* Animated Technical Background for Work Mode */}
-              <div className="w-full h-full bg-[url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmZ0c3Z5bnZ0c3Z5bnZ0c3Z5bnZ0c3Z5bnZ0c3Z5bnZ0c3Z5bnZ0c3Z5bSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKSjRrfIPjeiVyM/giphy.gif')] bg-cover bg-center opacity-30 mix-blend-screen"></div>
+              <div className="w-full h-full bg-[url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmZ0c3Z5bnZ0c3Z5bnZ0c3Z5bnZ0c3Z5bnZ0c3Z5bnZ0c3Z5bSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKSjRrfIPjeiVyM/giphy.gif')] bg-cover bg-center opacity-30 mix-blend-screen"></div>
           </div>
       )}
       
@@ -361,28 +236,13 @@ const App: React.FC = () => {
           </div>
           <div className="flex items-center gap-6">
               
-              {/* NEURAL NETWORK SWITCH (CLOUD/LOCAL) */}
               <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-full border border-white/10">
-                  <button 
-                    onClick={() => setProvider('gemini')}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-[9px] font-bold uppercase transition-all ${provider === 'gemini' ? 'bg-cyan-600 text-white' : 'text-slate-500 hover:text-cyan-400'}`}
-                  >
-                      <Cloud size={10} /> CLOUD
-                  </button>
-                  <button 
-                    onClick={() => setProvider('ollama')}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-[9px] font-bold uppercase transition-all ${provider === 'ollama' ? 'bg-green-600 text-white' : 'text-slate-500 hover:text-green-400'}`}
-                  >
+                  <button onClick={() => setProvider('ollama')} className={`flex items-center gap-1 px-3 py-1 rounded-full text-[9px] font-bold uppercase transition-all bg-green-600 text-white`}>
                       <Database size={10} /> LOCAL
                   </button>
               </div>
 
-              {/* VISION TOGGLE */}
-              <button 
-                onClick={() => setShowVisionHUD(true)}
-                className="p-2 rounded-full text-cyan-600 hover:text-cyan-300 transition-colors border border-transparent hover:border-cyan-500/30 hover:bg-cyan-900/20"
-                title="Activate Vision System"
-              >
+              <button onClick={() => setShowVisionHUD(true)} className="p-2 rounded-full text-cyan-600 hover:text-cyan-300 transition-colors border border-transparent hover:border-cyan-500/30 hover:bg-cyan-900/20">
                   <Eye size={20} />
               </button>
 
@@ -392,43 +252,9 @@ const App: React.FC = () => {
           </div>
       </div>
 
-      {/* SUGGESTION POPUP */}
-      {suggestion && (
-          <div className="absolute top-20 right-8 z-50 max-w-sm animate-[slideDown_0.5s_ease-out]">
-              <div className={`bg-slate-950/90 border ${getThemeColor('border')} p-4 rounded-lg shadow-lg backdrop-blur-md flex gap-4`}>
-                  <div className={`p-2 rounded-full h-fit ${getThemeColor('bg')} text-black`}><Lightbulb size={20} /></div>
-                  <div>
-                      <div className={`text-xs font-bold uppercase tracking-widest ${getThemeColor('text')}`}>Jarvis Suggestion</div>
-                      <p className="text-sm text-white mt-1 leading-snug">{suggestion}</p>
-                      <div className="flex gap-2 mt-3">
-                          <button onClick={() => setSuggestion(null)} className={`text-[10px] font-bold uppercase px-3 py-1 rounded border ${getThemeColor('border')} ${getThemeColor('text')} hover:bg-white/10`}>Accept</button>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      )}
-
       {/* VISION HUD OVERLAY */}
       {showVisionHUD && (
-          <VisionHUD 
-            onClose={() => setShowVisionHUD(false)} 
-            onGesture={handleGesture}
-          />
-      )}
-
-      {/* GLOBAL CHAT OVERLAY */}
-      {showChatOverlay && currentPage !== 'home' && (
-          <div className="absolute bottom-24 right-4 w-96 max-h-[400px] z-40 flex flex-col items-end">
-              <div className="w-full bg-slate-950/90 border border-cyan-500/50 rounded-lg p-4 shadow-lg backdrop-blur-md overflow-hidden flex flex-col">
-                  <div className="flex justify-between items-center mb-2 border-b border-cyan-900/50 pb-2">
-                      <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest">Global Link</span>
-                      <button onClick={() => setShowChatOverlay(false)}><Menu size={14} className="text-cyan-600" /></button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto max-h-[300px] scrollbar-hide">
-                       <ChatLog messages={chatHistory.slice(-5)} />
-                  </div>
-              </div>
-          </div>
+          <VisionHUD onClose={() => setShowVisionHUD(false)} onGesture={handleGesture} />
       )}
 
       {/* MAIN CONTENT AREA */}
@@ -436,12 +262,10 @@ const App: React.FC = () => {
           
           {currentPage === 'home' && (
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-y-auto lg:overflow-visible">
-                {/* LEFT */}
                 <div className="lg:col-span-3 flex flex-col gap-6">
                     <CalendarWidget />
                     <div className="flex-1 min-h-[250px]"><TodoWidget tasks={tasks} setTasks={setTasks} /></div>
                 </div>
-                {/* CENTER */}
                 <div className="lg:col-span-6 flex flex-col items-center justify-start relative">
                     <div className="relative w-full flex justify-center items-center py-4 min-h-[300px] shrink-0">
                         <div className="relative group cursor-pointer" onClick={handleToggleSystem}>
@@ -457,49 +281,13 @@ const App: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                {/* RIGHT - RESTORED HARDWARE WIDGETS */}
                 <div className="lg:col-span-3 flex flex-col gap-4">
                     <ArmorWidget /> 
                     <MediaWidget />
                     <WeatherWidget />
-                    
-                    {/* HARDWARE STACK */}
                     <div className="grid grid-cols-1 gap-2">
-                        <SystemWidget 
-                            title="CPU CORE" 
-                            type="graph" 
-                            value={Math.round(cpuLoad)} 
-                            subValue="INTEL i7" 
-                            data={cpuHistory} 
-                            className="h-32"
-                        />
-                        <SystemWidget 
-                            title="GPU ENGINE" 
-                            type="graph" 
-                            value={Math.round(gpuLoad)} 
-                            subValue="RTX 2060" 
-                            data={gpuHistory} 
-                            className="h-32"
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                            <SystemWidget 
-                                title="RAM" 
-                                type="text" 
-                                value={`${Math.round(ramUsed)}GB`} 
-                                subValue="/ 32GB" 
-                                className="h-28"
-                            />
-                            {/* UPDATED STORAGE WIDGET: C: and D: Drives */}
-                            <SystemWidget 
-                                title="STORAGE ARRAY" 
-                                type="multi-bar" 
-                                items={[
-                                    { label: 'DISK C: (SYS)', value: 120, max: 250, color: 'bg-cyan-500' },
-                                    { label: 'DISK D: (DATA)', value: 45, max: 250, color: 'bg-blue-500' },
-                                ]}
-                                className="h-28"
-                            />
-                        </div>
+                        <SystemWidget title="CPU CORE" type="graph" value={Math.round(cpuLoad)} subValue="INTEL i7" data={cpuHistory} className="h-32"/>
+                        <SystemWidget title="GPU ENGINE" type="graph" value={Math.round(gpuLoad)} subValue="RTX 2060" data={gpuHistory} className="h-32"/>
                     </div>
                 </div>
             </div>
@@ -516,7 +304,6 @@ const App: React.FC = () => {
           {currentPage === 'people' && <PeoplePage />}
       </div>
 
-      {/* GLOBAL FOOTER: CHAT INPUT */}
       <GenerationPanel visible={showGenPanel} config={genConfig} onChange={setGenConfig} onClose={() => setShowGenPanel(false)}/>
       <ChatInput onSendMessage={handleSendMessage} onToggleGeneration={() => setShowGenPanel(!showGenPanel)} isGenerationMode={showGenPanel} disabled={isProcessing}/>
     </div>

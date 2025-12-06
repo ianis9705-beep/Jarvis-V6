@@ -99,26 +99,26 @@ export const CalendarWidget: React.FC = () => {
 };
 
 // --- TODO LIST WIDGET ---
-export const TodoWidget: React.FC = () => {
-  const [tasks, setTasks] = useState<TodoItem[]>([
-    { id: '1', text: 'Calibrate Sensors', completed: true },
-    { id: '2', text: 'System Diagnostics', completed: false },
-    { id: '3', text: 'Update Neural Net', completed: false },
-  ]);
+interface TodoWidgetProps {
+  tasks: TodoItem[];
+  setTasks: React.Dispatch<React.SetStateAction<TodoItem[]>>;
+}
+
+export const TodoWidget: React.FC<TodoWidgetProps> = ({ tasks, setTasks }) => {
   const [newTask, setNewTask] = useState('');
 
   const addTask = () => {
     if (!newTask.trim()) return;
-    setTasks([...tasks, { id: Date.now().toString(), text: newTask, completed: false }]);
+    setTasks(prev => [...prev, { id: Date.now().toString(), text: newTask, completed: false }]);
     setNewTask('');
   };
 
   const toggleTask = (id: string) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
   };
 
   const removeTask = (id: string) => {
-      setTasks(tasks.filter(t => t.id !== id));
+      setTasks(prev => prev.filter(t => t.id !== id));
   };
 
   return (
