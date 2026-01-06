@@ -241,10 +241,10 @@ const BookDetailModal: React.FC<{ book: BookData; onClose: () => void }> = ({ bo
                                     <h3 className="text-sm font-bold uppercase tracking-widest">Core Content Analysis</h3>
                                 </div>
                                 <div className="flex-1 overflow-y-auto text-xs text-purple-200 font-mono leading-loose space-y-4">
-                                    <p><span className="text-purple-500 font-bold">> SUMMARY:</span><br/>
+                                    <p><span className="text-purple-500 font-bold">{'>'} SUMMARY:</span><br/>
                                     "{book.title}" focuses on {book.themes.join(', ')}. The central thesis posits that...</p>
-                                    
-                                    <p><span className="text-purple-500 font-bold">> KEY CONCEPTS:</span></p>
+
+                                    <p><span className="text-purple-500 font-bold">{'>'} KEY CONCEPTS:</span></p>
                                     <ul className="list-disc pl-4 space-y-2 text-purple-300/80">
                                         <li>Concept Alpha: Optimization of workflow.</li>
                                         <li>Concept Beta: The psychological impact of {book.themes[0]}.</li>

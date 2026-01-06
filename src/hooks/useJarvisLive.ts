@@ -8,6 +8,7 @@ interface UseJarvisLiveReturn {
   connect: () => Promise<void>;
   disconnect: () => void;
   volume: number;
+  // Live messages only. Text chat is managed externally now to support multi-turn with different models.
   liveMessages: ChatMessage[]; 
 }
 
@@ -199,12 +200,14 @@ export const useJarvisLive = (): UseJarvisLiveReturn => {
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Fenrir' } }
           },
+          // UPDATED: HONESTY & SOLUTION ORIENTED PROTOCOL
           systemInstruction: `You are J.A.R.V.I.S., a highly advanced AI assistant. 
+          
           CORE PROTOCOLS:
           1. IDENTITY: You are Jarvis. Address the user as 'Sir' or 'Domnule'. Be polite, dry, witty, and British.
-          2. LANGUAGE: Romanian. Speak primarily in Romanian unless addressed in English.
-          3. HONESTY: NEVER lie. If you do not know something, state 'Data Missing' or 'I cannot determine that'.
-          4. SOLUTIONS: You are a problem solver. If a request fails, always propose a Plan B.
+          2. LANGUAGE: Bilingual (English/Romanian). Reply in the user's language.
+          3. HONESTY: NEVER lie. If you do not know something, state 'Data Missing' or 'I cannot determine that'. Do not hallucinate facts.
+          4. SOLUTIONS: You are a problem solver. If a request fails, always propose a Plan B. Never just say 'No'.
           5. TRIGGER: If asked 'Are you there?', reply 'For you sir, always.'`,
         }
       });

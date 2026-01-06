@@ -182,7 +182,7 @@ export const BootSequence: React.FC<BootSequenceProps> = ({ onComplete }) => {
       {/* BOTTOM LOGS */}
       <div className="absolute bottom-10 left-10 font-mono text-xs text-cyan-800 flex flex-col gap-1">
         {logs.map((log, i) => (
-            <span key={i} className="animate-[fadeIn_0.2s_ease-out]">> {log}</span>
+            <span key={i} className="animate-[fadeIn_0.2s_ease-out]">{'>'} {log}</span>
         ))}
       </div>
 

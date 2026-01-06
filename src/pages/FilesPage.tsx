@@ -25,7 +25,6 @@ export const FilesPage: React.FC = () => {
       icon: <User size={32} />,
       color: 'text-cyan-400',
       integrity: 98,
-      aiAccess: 'REQUEST_WRITE',
       data: ["Personality: Ambitious", "Music: AC/DC", "Role: Admin", "Lang: RO/EN"],
       details: "Subject demonstrates high aptitude for systems architecture.",
       aiAccess: 'REQUEST_WRITE'
@@ -36,7 +35,6 @@ export const FilesPage: React.FC = () => {
       icon: <GraduationCap size={32} />,
       color: 'text-yellow-400',
       integrity: 85,
-      aiAccess: 'READ_ONLY',
       data: ["Status: Active Student", "Focus: CS/Math", "Exams: Physics Finals"],
       details: "Strong focus on STEM fields. Requires deadline management.",
       aiAccess: 'READ_ONLY'
@@ -47,7 +45,6 @@ export const FilesPage: React.FC = () => {
       icon: <FolderGit2 size={32} />,
       color: 'text-blue-400',
       integrity: 92,
-      aiAccess: 'FULL_ACCESS',
       data: ["Project J.A.R.V.I.S.", "Home Auto Hub", "Neural Net V3"],
       details: "Primary resource consumer. Integration successful.",
       aiAccess: 'FULL_ACCESS'
@@ -58,7 +55,6 @@ export const FilesPage: React.FC = () => {
       icon: <Brain size={32} />,
       color: 'text-purple-400',
       integrity: 78,
-      aiAccess: 'REQUEST_WRITE',
       data: ["Stress: Moderate", "Sleep: 6.5h", "Cognitive Load: High"],
       details: "Advising deep-work sessions and mandatory disconnects.",
       aiAccess: 'REQUEST_WRITE'
@@ -69,7 +65,6 @@ export const FilesPage: React.FC = () => {
       icon: <Apple size={32} />,
       color: 'text-green-400',
       integrity: 65,
-      aiAccess: 'REQUEST_WRITE',
       data: ["Hydration: 65%", "Diet: High Protein", "Tracking: Active"],
       details: "Caloric data stream intermittent. Hydration sensors need calibration.",
       aiAccess: 'REQUEST_WRITE'
@@ -80,7 +75,6 @@ export const FilesPage: React.FC = () => {
       icon: <Activity size={32} />,
       color: 'text-red-400',
       integrity: 88,
-      aiAccess: 'READ_ONLY',
       data: ["HR: 72 BPM", "Gym: 4x/Week", "Status: Healthy"],
       details: "Biometrics nominal. Ready for high-intensity training.",
       aiAccess: 'READ_ONLY'
@@ -159,7 +153,7 @@ export const FilesPage: React.FC = () => {
                     <div className="space-y-3 relative z-10">
                         {mod.data.slice(0, 4).map((item, idx) => (
                             <div key={idx} className="flex items-start gap-2 text-xs font-mono text-cyan-300/80 border-b border-cyan-900/20 pb-2 last:border-0 truncate">
-                                <span className="text-cyan-700 mt-[2px]">></span>
+                                <span className="text-cyan-700 mt-[2px]">{'>'}</span>
                                 <span className="truncate">{item}</span>
                             </div>
                         ))}

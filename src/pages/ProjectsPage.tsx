@@ -311,16 +311,16 @@ const ProjectModal: React.FC<{ project: Project; onClose: () => void }> = ({ pro
                          <div className="h-full flex flex-col gap-4 animate-[fadeIn_0.2s_ease-out]">
                              <h3 className="text-sm text-purple-400 font-bold uppercase tracking-widest border-b border-purple-900/30 pb-2">AI TACTICAL DIRECTIVES</h3>
                              <div className="p-4 rounded bg-purple-900/10 border border-purple-500/20 text-xs text-purple-200 font-mono leading-relaxed h-full">
-                                 <span className="text-purple-500">></span> ANALYZING PROJECT STRUCTURE...<br/>
-                                 <span className="text-green-500">></span> STATUS: OPTIMAL<br/>
+                                 <span className="text-purple-500">{'>'}</span> ANALYZING PROJECT STRUCTURE...<br/>
+                                 <span className="text-green-500">{'>'}</span> STATUS: OPTIMAL<br/>
                                  <br/>
-                                 <span className="text-purple-500">></span> DIRECTIVE 1:<br/>
+                                 <span className="text-purple-500">{'>'}</span> DIRECTIVE 1:<br/>
                                  Consider modularizing the 'FilesPage' component further for better maintainability.<br/>
                                  <br/>
-                                 <span className="text-purple-500">></span> DIRECTIVE 2:<br/>
+                                 <span className="text-purple-500">{'>'}</span> DIRECTIVE 2:<br/>
                                  Implement error boundary for the Neural Net connection to prevent crash on timeout.<br/>
                                  <br/>
-                                 <span className="text-purple-500 blink">></span> AWAITING NEW CODE COMMIT TO RE-ANALYZE...
+                                 <span className="text-purple-500 blink">{'>'}</span> AWAITING NEW CODE COMMIT TO RE-ANALYZE...
                              </div>
                          </div>
                      )}
